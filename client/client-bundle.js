@@ -77,47 +77,97 @@ function Comments(eventBus, overlays, bpmnjs) {
       }
     }
 
-    function addFieldRow(values, fieldType) {
-      var row = $('<div class="field-row" data-row></div>');
+    function addFieldRow(values, fieldType, parentContainer, level) {
+      level = level || 0;
+      parentContainer = parentContainer || $fields;
       
-      // Crear el título del campo encima de la fila
-      var titleText = $('<div class="field-title">' + (fieldType === 'reference' ? 'Reference Field' : 'Data Field') + '</div>');
-      var delBtn = $('<button type="button" class="btn-del" title="Remove">×</button>');
+      var row = $('<div class="field-row" data-row data-level="' + level + '" data-type="' + fieldType + '"></div>');
       
-      delBtn.on('click', function() { 
-        row.remove(); 
-      });
+      // Crear el título del campo
+      var fieldTitle = fieldType === 'reference' ? 'Reference Field' : 
+                      fieldType === 'aggregation' ? 'Aggregation Field' : 'Data Field';
+      var titleText = $('<div class="field-title">' + fieldTitle + '</div>');
       
-      // Agregar el título encima de la fila
+      // Agregar el título
       row.append(titleText);
       
-      var idInput = $('<select class="fld" data-fld="identifier"><option value="">Identifier</option><option value="true">true</option><option value="false">false</option></select>').val(values && values.identifier || '');
-      var opInput = $('<select class="fld" data-fld="operation"><option value="">Operation</option><option value="input">input</option><option value="generation">generation</option><option value="derivation">derivation</option></select>').val(values && values.operation || '');
-      var domInput = $('<select class="fld" data-fld="domain"><option value="">Domain</option><option value="text">text</option><option value="number">number</option><option value="money">money</option><option value="date">date</option></select>').val(values && values.domain || '');
-      var valueInput = $('<input type="text" class="fld" placeholder="Value" data-fld="value" style="display: none;"/>').val(values && values.value || '');
-      var fieldDelBtn = $('<button type="button" class="btn-del" title="Remove">×</button>');
+      if (fieldType === 'aggregation') {
+        // AGREGACIÓN: Solo nombre y botones para agregar hijos
+        var nameInput = $('<input type="text" class="fld" placeholder="Aggregation Name" data-fld="name"/>').val(values && values.name || 'Aggregation');
+        var fieldDelBtn = $('<button type="button" class="btn-del" title="Remove">x</button>');
+        
+        // Contenedor para los botones de agregación
+        var aggregationButtons = $('<div class="aggregation-buttons" style="margin: 5px 0;"></div>');
 
-      // Mostrar/ocultar el campo de valor según el domain seleccionado
-      domInput.on('change', function() {
-        var selectedDomain = $(this).val();
-        if (selectedDomain && selectedDomain !== '') {
-          valueInput.show();
-        } else {
-          valueInput.hide();
+        var addDataBtn = $('<button type="button" class="btn-add-nested" data-add-type="data" title="Add Data Field">＋ Data</button>');
+        var addRefBtn = $('<button type="button" class="btn-add-nested" data-add-type="reference" title="Add Reference">＋ Reference</button>');
+        var addAggBtn = $('<button type="button" class="btn-add-nested" data-add-type="aggregation" title="Add Aggregation">＋ Aggregation</button>');
+        
+        aggregationButtons.append(addDataBtn, addRefBtn, addAggBtn);
+        
+        // Contenedor para los hijos
+        var childrenContainer = $('<div class="aggregation-children" data-children></div>');
+        
+        // Event listeners para los botones de agregación
+        addDataBtn.on('click', function() {
+          addFieldRow({}, 'data', childrenContainer, level + 1);
+        });
+        
+        addRefBtn.on('click', function() {
+          addFieldRow({}, 'reference', childrenContainer, level + 1);
+        });
+        
+        addAggBtn.on('click', function() {
+          addFieldRow({}, 'aggregation', childrenContainer, level + 1);
+        });
+        
+        fieldDelBtn.on('click', function() { 
+          row.remove(); 
+        });
+        
+        row.append(nameInput, fieldDelBtn, aggregationButtons, childrenContainer);
+        
+        // Cargar hijos existentes si los hay
+        if (values && values.children && Array.isArray(values.children)) {
+          values.children.forEach(function(child) {
+            var childType = child.type === 'Aggregation' ? 'aggregation' : 
+                           child.type === 'Reference Field' ? 'reference' : 'data';
+            addFieldRow(child, childType, childrenContainer, level + 1);
+          });
         }
-      });
+        
+      } else {
+        // DATA FIELD o REFERENCE FIELD: Los campos normales
+        var idInput = $('<select class="fld" data-fld="identifier"><option value="">Identifier</option><option value="true">true</option><option value="false">false</option></select>').val(values && values.identifier || '');
+        var opInput = $('<select class="fld" data-fld="operation"><option value="">Operation</option><option value="input">input</option><option value="generation">generation</option><option value="derivation">derivation</option></select>').val(values && values.operation || '');
+        var domInput = $('<select class="fld" data-fld="domain"><option value="">Domain</option><option value="text">text</option><option value="number">number</option><option value="money">money</option><option value="date">date</option></select>').val(values && values.domain || '');
+        var valueInput = $('<input type="text" class="fld" placeholder="Value" data-fld="value" style="display: none;"/>').val(values && values.value || '');
+        var fieldDelBtn = $('<button type="button" class="btn-del" title="Remove">×</button>');
 
-      // Trigger inicial para mostrar el campo si ya hay un valor
-      if (values && values.domain) {
-        valueInput.show();
+        // Mostrar/ocultar el campo de valor según el domain seleccionado
+        domInput.on('change', function() {
+          var selectedDomain = $(this).val();
+          if (selectedDomain && selectedDomain !== '') {
+            valueInput.show();
+          } else {
+            valueInput.hide();
+          }
+        });
+
+        // Trigger inicial para mostrar el campo si ya hay un valor
+        if (values && values.domain) {
+          valueInput.show();
+        }
+
+        fieldDelBtn.on('click', function() { 
+          row.remove(); 
+        });
+
+        row.append(idInput, opInput, domInput, valueInput, fieldDelBtn);
       }
-
-      fieldDelBtn.on('click', function() { 
-        row.remove(); 
-      });
-
-      row.append(idInput, opInput, domInput, valueInput, fieldDelBtn);
-      $fields.append(row);
+      
+      parentContainer.append(row);
+      return row;
     }
 
     function getPoolName(element) {
@@ -344,20 +394,57 @@ function Comments(eventBus, overlays, bpmnjs) {
       }
       
       var elementName = element.businessObject.name || element.businessObject.id || 'Unknown Element';
-      var children = [];
       
-      // Generar los children con la estructura anterior
-      $fields.find('[data-row]').each(function() {
-        var $row = $(this);
-        var item = {
-          type: 'DataField',
-          identifier: $row.find('[data-fld="identifier"]').val() || '',
-          operation: $row.find('[data-fld="operation"]').val() || '',
-          domain: $row.find('[data-fld="domain"]').val() || '',
-          value: $row.find('[data-fld="value"]').val() || ''
-        };
-        children.push(item);
-      });
+      // Función recursiva para serializar campos y sus hijos
+      function serializeFieldsRecursively(container) {
+        var items = [];
+        
+        container.find('> [data-row]').each(function() {
+          var $row = $(this);
+          var fieldType = $row.attr('data-type');
+          
+          if (fieldType === 'aggregation') {
+            // AGREGACIÓN: Serializar con hijos
+            var item = {
+              name: $row.find('[data-fld="name"]').val() || 'Aggregation',
+              type: 'Aggregation',
+              children: []
+            };
+            
+            // Buscar el contenedor de hijos y serializar recursivamente
+            var $childrenContainer = $row.find('[data-children]').first();
+            if ($childrenContainer.length > 0) {
+              item.children = serializeFieldsRecursively($childrenContainer);
+            }
+            
+            items.push(item);
+            
+          } else {
+            // DATA FIELD o REFERENCE FIELD
+            var item = {
+              name: fieldType === 'reference' ? 'Reference Field' : 'Data Field',
+              type: fieldType === 'reference' ? 'Reference Field' : 'Data Field',
+              operation: $row.find('[data-fld="operation"]').val() || 'Operation',
+              domain: $row.find('[data-fld="domain"]').val() || 'Domain',
+              identifier: $row.find('[data-fld="identifier"]').val() || 'Identifier',
+              children: []
+            };
+            
+            // Agregar value si existe
+            var value = $row.find('[data-fld="value"]').val();
+            if (value) {
+              item.value = value;
+            }
+            
+            items.push(item);
+          }
+        });
+        
+        return items;
+      }
+      
+      // Serializar todos los campos del nivel raíz
+      var children = serializeFieldsRecursively($fields);
       
       // Generar la nueva estructura del JSON
       var jsonStructure = {
@@ -576,14 +663,40 @@ function Comments(eventBus, overlays, bpmnjs) {
               // Limpiar campos existentes
               $fields.empty();
               
-              // Cargar los campos desde el modelo BPMN
-              if (parsedData.messageStructure && parsedData.messageStructure.children && Array.isArray(parsedData.messageStructure.children)) {
-                parsedData.messageStructure.children.forEach(function(item) {
-                  if (item && typeof item === 'object') {
-                    addFieldRow(item, 'data');
-                  }
-                });
-              }
+                              // Función recursiva para cargar campos jerárquicos
+                function loadFieldsRecursively(items, container, level) {
+                  level = level || 0;
+                  container = container || $fields;
+                  
+                  if (!items || !Array.isArray(items)) return;
+                  
+                  items.forEach(function(item) {
+                    if (item && typeof item === 'object') {
+                      var fieldType = 'data'; // default
+                      
+                      if (item.type === 'Aggregation') {
+                        fieldType = 'aggregation';
+                      } else if (item.type === 'Reference Field') {
+                        fieldType = 'reference';
+                      }
+                      
+                      var $newRow = addFieldRow(item, fieldType, container, level);
+                      
+                      // Si tiene hijos, cargarlos recursivamente
+                      if (item.children && Array.isArray(item.children) && item.children.length > 0) {
+                        var $childrenContainer = $newRow.find('[data-children]').first();
+                        if ($childrenContainer.length > 0) {
+                          loadFieldsRecursively(item.children, $childrenContainer, level + 1);
+                        }
+                      }
+                    }
+                  });
+                }
+                
+                // Cargar los campos desde el modelo BPMN
+                if (parsedData.messageStructure && parsedData.messageStructure.children && Array.isArray(parsedData.messageStructure.children)) {
+                  loadFieldsRecursively(parsedData.messageStructure.children, $fields, 0);
+                }
               
               // Actualizar el editor JSON
               $editor.text(stringifyPretty(parsedData));
@@ -626,10 +739,15 @@ function Comments(eventBus, overlays, bpmnjs) {
     function insertDataField() { addFieldRow({}, 'data'); }
     
     function insertReferenceField() { addFieldRow({}, 'reference'); }
+    
+    function insertAggregationField() { addFieldRow({}, 'aggregation'); }
 
     if ($addBtn && $addBtn.length) { $addBtn.on('click', insertDataField); }
     
     if ($addRefBtn && $addRefBtn.length) { $addRefBtn.on('click', insertReferenceField); }
+    
+    var $addAggBtn = $overlay.find('[data-add-aggregation-field]');
+    if ($addAggBtn && $addAggBtn.length) { $addAggBtn.on('click', insertAggregationField); }
 
     if ($saveBtn && $saveBtn.length) {
       $saveBtn.on('click', function() {
@@ -955,9 +1073,9 @@ Comments.OVERLAY_HTML =
               '<div class="toolbar">' +
           '<button type="button" class="btn-add" data-add-data-field title="Add Data Field">＋ Data Field</button>' +
 		'<button type="button" class="btn-add" data-add-reference-field title="Add Reference Field">＋ Reference Field</button>' +
+		'<button type="button" class="btn-add" data-add-aggregation-field title="Add Aggregation Field">＋ Aggregation Field</button>' +
           '<button type="button" class="btn-save" data-save title="Sync to JSON">Save</button>' +
           '<button type="button" class="btn-clear" data-clear title="Clear fields">Clear</button>' +
-          '<button type="button" class="btn-test" data-test-bpmn title="Test BPMN Save">Test</button>' +
         '</div>' +
       '<div class="comments"></div>' +
       '<div class="field-titles" data-field-titles></div>' +

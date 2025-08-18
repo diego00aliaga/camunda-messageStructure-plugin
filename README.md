@@ -49,11 +49,5 @@ npm install
 npm run bundle
 ```
 
-## 📄 License
 
-MIT © [Your Name]
-
----
-
-**💡 Tip**: Your message structures are automatically saved in the BPMN XML file, so they'll persist when you close and reopen Camunda Modeler!
 # camunda-messageStructure-plugin

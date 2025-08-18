@@ -19,6 +19,142 @@ var util = require('./util');
 
 function Comments(eventBus, overlays, bpmnjs) {
 
+  // Global registry for aggregation templates
+  var aggregationRegistry = {};
+  
+  // Function to register an aggregation template
+  function registerAggregation(elementId, aggregationData) {
+    var templateId = elementId + '_' + (aggregationData.name || 'Aggregation');
+    aggregationRegistry[templateId] = {
+      id: templateId,
+      elementId: elementId,
+      name: aggregationData.name || 'Aggregation',
+      data: JSON.parse(JSON.stringify(aggregationData)) // Deep clone
+    };
+    console.log('🎯 Registered aggregation template:', templateId);
+    console.log('   Element ID:', elementId);
+    console.log('   Aggregation name:', aggregationData.name);
+    console.log('   Total registry size:', Object.keys(aggregationRegistry).length);
+  }
+  
+  // Function to get all available aggregation templates
+  function getAvailableAggregations() {
+    return Object.values(aggregationRegistry);
+  }
+  
+  // Function to clone an aggregation template
+  function cloneAggregation(templateId) {
+    var template = aggregationRegistry[templateId];
+    if (template) {
+      return JSON.parse(JSON.stringify(template.data)); // Deep clone
+    }
+    return null;
+  }
+  
+  // Function to register aggregations from saved data
+  function registerAggregationsFromData(fields, elementId) {
+    function traverseFields(items) {
+      if (!items || !Array.isArray(items)) return;
+      
+      items.forEach(function(item) {
+        if (item && item.type === 'Aggregation') {
+          registerAggregation(elementId, item);
+        }
+        // Recursively check children
+        if (item.children && Array.isArray(item.children)) {
+          traverseFields(item.children);
+        }
+      });
+    }
+    
+    traverseFields(fields);
+  }
+  
+  // Global function to update all aggregation selectors across all overlays
+  function updateAllAggregationSelectors() {
+    var availableAggregations = getAvailableAggregations();
+    console.log('Updating all aggregation selectors globally, available:', availableAggregations.length);
+    
+    // Find all overlays with aggregation selectors
+    var allOverlays = overlays.get({ type: 'comments' });
+    
+    allOverlays.forEach(function(overlay) {
+      var $overlay = overlay.html;
+      if (!$overlay) return;
+      
+      // Update main selector
+      var $mainSelector = $overlay.find('[data-select-aggregation]');
+      if ($mainSelector.length) {
+        updateSelectorOptions($mainSelector, availableAggregations);
+      }
+      
+      // Update all nested selectors
+      $overlay.find('.aggregation-selector-nested').each(function() {
+        updateSelectorOptions($(this), availableAggregations);
+      });
+    });
+  }
+  
+  // Helper function to update options for a specific selector
+  function updateSelectorOptions($selector, availableAggregations) {
+    // Clear existing options except the first one
+    $selector.find('option:not(:first)').remove();
+    
+    // Add available aggregations
+    availableAggregations.forEach(function(agg) {
+      var displayName = agg.name + ' (from ' + agg.elementId + ')';
+      var option = $('<option value="' + agg.id + '">' + displayName + '</option>');
+      $selector.append(option);
+    });
+    
+    // Show/hide selector based on availability
+    if (availableAggregations.length > 0) {
+      $selector.show();
+    } else {
+      $selector.hide();
+    }
+  }
+  
+  // Function to scan entire diagram for existing aggregations
+  function scanDiagramForAggregations() {
+    try {
+      if (!bpmnjs || !bpmnjs.get) return;
+      
+      console.log('🔍 Scanning diagram for aggregations...');
+      var elementRegistry = bpmnjs.get('elementRegistry');
+      var elements = elementRegistry.getAll();
+      var scannedCount = 0;
+      
+      elements.forEach(function(element) {
+        if (element.businessObject && element.businessObject.$instanceOf('bpmn:FlowNode')) {
+          var bo = element.businessObject;
+          var docs = bo.get('documentation') || [];
+          
+          docs.forEach(function(doc) {
+            if (doc && doc.text && doc.text.includes('dataFields:')) {
+              try {
+                var jsonText = doc.text.substring(doc.text.indexOf('dataFields:') + 'dataFields:'.length);
+                var parsedData = JSON.parse(jsonText);
+                
+                if (parsedData.messageStructure && parsedData.messageStructure.children) {
+                  scannedCount++;
+                  console.log('📋 Found data fields in element:', element.businessObject.id);
+                  registerAggregationsFromData(parsedData.messageStructure.children, element.businessObject.id);
+                }
+              } catch (e) {
+                console.warn('Error parsing aggregation data from element:', element.businessObject.id, e);
+              }
+            }
+          });
+        }
+      });
+      
+      console.log('✅ Diagram scan complete. Elements with data:', scannedCount, 'Total aggregations registered:', Object.keys(aggregationRegistry).length);
+    } catch (e) {
+      console.error('Error scanning diagram for aggregations:', e);
+    }
+  }
+
   function toggleCollapse(element) {
 
     var o = overlays.get({ element: element, type: 'comments' })[0];
@@ -85,7 +221,8 @@ function Comments(eventBus, overlays, bpmnjs) {
       
       // Crear el título del campo
       var fieldTitle = fieldType === 'reference' ? 'Reference Field' : 
-                      fieldType === 'aggregation' ? 'Aggregation Field' : 'Data Field';
+                      fieldType === 'aggregation' ? 'Aggregation Field' : 
+                      fieldType === 'iteration' ? 'Iteration Field' : 'Data Field';
       var titleText = $('<div class="field-title">' + fieldTitle + '</div>');
       
       // Agregar el título
@@ -102,8 +239,10 @@ function Comments(eventBus, overlays, bpmnjs) {
         var addDataBtn = $('<button type="button" class="btn-add-nested" data-add-type="data" title="Add Data Field">＋ Data</button>');
         var addRefBtn = $('<button type="button" class="btn-add-nested" data-add-type="reference" title="Add Reference">＋ Reference</button>');
         var addAggBtn = $('<button type="button" class="btn-add-nested" data-add-type="aggregation" title="Add Aggregation">＋ Aggregation</button>');
+        var addIterBtn = $('<button type="button" class="btn-add-nested" data-add-type="iteration" title="Add Iteration">＋ Iteration</button>');
+        var selectAggBtn = $('<select class="btn-add-nested aggregation-selector-nested" title="Seleccionar agregación" style="max-width: 150px; margin-left: 5px;"><option value="">📋 Seleccionar existente</option></select>');
         
-        aggregationButtons.append(addDataBtn, addRefBtn, addAggBtn);
+        aggregationButtons.append(addDataBtn, addRefBtn, addAggBtn, addIterBtn, selectAggBtn);
         
         // Contenedor para los hijos
         var childrenContainer = $('<div class="aggregation-children" data-children></div>');
@@ -121,6 +260,27 @@ function Comments(eventBus, overlays, bpmnjs) {
           addFieldRow({}, 'aggregation', childrenContainer, level + 1);
         });
         
+        addIterBtn.on('click', function() {
+          addFieldRow({}, 'iteration', childrenContainer, level + 1);
+        });
+        
+        // Initialize this nested selector
+        setTimeout(function() {
+          updateAllAggregationSelectors();
+        }, 10);
+        
+        // Aggregation selector for nested level
+        selectAggBtn.on('change', function() {
+          var selectedTemplateId = $(this).val();
+          if (selectedTemplateId) {
+            var clonedData = cloneAggregation(selectedTemplateId);
+            if (clonedData) {
+              addFieldRow(clonedData, 'aggregation', childrenContainer, level + 1);
+              $(this).val(''); // Reset selector
+            }
+          }
+        });
+        
         fieldDelBtn.on('click', function() { 
           row.remove(); 
         });
@@ -131,6 +291,58 @@ function Comments(eventBus, overlays, bpmnjs) {
         if (values && values.children && Array.isArray(values.children)) {
           values.children.forEach(function(child) {
             var childType = child.type === 'Aggregation' ? 'aggregation' : 
+                           child.type === 'Iteration' ? 'iteration' :
+                           child.type === 'Reference Field' ? 'reference' : 'data';
+            addFieldRow(child, childType, childrenContainer, level + 1);
+          });
+        }
+        
+      } else if (fieldType === 'iteration') {
+        // ITERACIÓN: Igual que agregación pero con tipo Iteration
+        var nameInput = $('<input type="text" class="fld" placeholder="Iteration Name" data-fld="name"/>').val(values && values.name || 'Iteration');
+        var fieldDelBtn = $('<button type="button" class="btn-del" title="Remove">x</button>');
+        
+        // Contenedor para los botones de iteración
+        var iterationButtons = $('<div class="aggregation-buttons" style="margin: 5px 0;"></div>');
+
+        var addDataBtn = $('<button type="button" class="btn-add-nested" data-add-type="data" title="Add Data Field">＋ Data</button>');
+        var addRefBtn = $('<button type="button" class="btn-add-nested" data-add-type="reference" title="Add Reference">＋ Reference</button>');
+        var addAggBtn = $('<button type="button" class="btn-add-nested" data-add-type="aggregation" title="Add Aggregation">＋ Aggregation</button>');
+        var addIterBtn = $('<button type="button" class="btn-add-nested" data-add-type="iteration" title="Add Iteration">＋ Iteration</button>');
+        
+        iterationButtons.append(addDataBtn, addRefBtn, addAggBtn, addIterBtn);
+        
+        // Contenedor para los hijos
+        var childrenContainer = $('<div class="aggregation-children" data-children></div>');
+        
+        // Event listeners para los botones de iteración
+        addDataBtn.on('click', function() {
+          addFieldRow({}, 'data', childrenContainer, level + 1);
+        });
+        
+        addRefBtn.on('click', function() {
+          addFieldRow({}, 'reference', childrenContainer, level + 1);
+        });
+        
+        addAggBtn.on('click', function() {
+          addFieldRow({}, 'aggregation', childrenContainer, level + 1);
+        });
+        
+        addIterBtn.on('click', function() {
+          addFieldRow({}, 'iteration', childrenContainer, level + 1);
+        });
+        
+        fieldDelBtn.on('click', function() { 
+          row.remove(); 
+        });
+        
+        row.append(nameInput, fieldDelBtn, iterationButtons, childrenContainer);
+        
+        // Cargar hijos existentes si los hay
+        if (values && values.children && Array.isArray(values.children)) {
+          values.children.forEach(function(child) {
+            var childType = child.type === 'Aggregation' ? 'aggregation' : 
+                           child.type === 'Iteration' ? 'iteration' :
                            child.type === 'Reference Field' ? 'reference' : 'data';
             addFieldRow(child, childType, childrenContainer, level + 1);
           });
@@ -419,6 +631,22 @@ function Comments(eventBus, overlays, bpmnjs) {
             
             items.push(item);
             
+          } else if (fieldType === 'iteration') {
+            // ITERACIÓN: Serializar con hijos
+            var item = {
+              name: $row.find('[data-fld="name"]').val() || 'Iteration',
+              type: 'Iteration',
+              children: []
+            };
+            
+            // Buscar el contenedor de hijos y serializar recursivamente
+            var $childrenContainer = $row.find('[data-children]').first();
+            if ($childrenContainer.length > 0) {
+              item.children = serializeFieldsRecursively($childrenContainer);
+            }
+            
+            items.push(item);
+            
           } else {
             // DATA FIELD o REFERENCE FIELD
             var item = {
@@ -676,6 +904,8 @@ function Comments(eventBus, overlays, bpmnjs) {
                       
                       if (item.type === 'Aggregation') {
                         fieldType = 'aggregation';
+                      } else if (item.type === 'Iteration') {
+                        fieldType = 'iteration';
                       } else if (item.type === 'Reference Field') {
                         fieldType = 'reference';
                       }
@@ -700,6 +930,11 @@ function Comments(eventBus, overlays, bpmnjs) {
               
               // Actualizar el editor JSON
               $editor.text(stringifyPretty(parsedData));
+              
+              // Register aggregations from loaded data
+              if (parsedData.messageStructure && parsedData.messageStructure.children) {
+                registerAggregationsFromData(parsedData.messageStructure.children, element.businessObject.id);
+              }
               
               return true; // Indicar que se cargaron los campos
             } catch (parseError) {
@@ -741,6 +976,8 @@ function Comments(eventBus, overlays, bpmnjs) {
     function insertReferenceField() { addFieldRow({}, 'reference'); }
     
     function insertAggregationField() { addFieldRow({}, 'aggregation'); }
+    
+    function insertIterationField() { addFieldRow({}, 'iteration'); }
 
     if ($addBtn && $addBtn.length) { $addBtn.on('click', insertDataField); }
     
@@ -748,6 +985,90 @@ function Comments(eventBus, overlays, bpmnjs) {
     
     var $addAggBtn = $overlay.find('[data-add-aggregation-field]');
     if ($addAggBtn && $addAggBtn.length) { $addAggBtn.on('click', insertAggregationField); }
+    
+    var $addIterBtn = $overlay.find('[data-add-iteration-field]');
+    if ($addIterBtn && $addIterBtn.length) { $addIterBtn.on('click', insertIterationField); }
+    
+    // Aggregation selector functionality
+    var $aggSelector = $overlay.find('[data-select-aggregation]');
+    
+    function updateAggregationSelector() {
+      var availableAggregations = getAvailableAggregations();
+      
+      // Update main selector
+      var $selector = $aggSelector;
+      if ($selector && $selector.length) {
+        // Clear existing options except the first one
+        $selector.find('option:not(:first)').remove();
+        
+        // Add available aggregations
+        availableAggregations.forEach(function(agg) {
+          var displayName = agg.name + ' ( ' + agg.elementId + ')';
+          var option = $('<option value="' + agg.id + '">' + displayName + '</option>');
+          $selector.append(option);
+        });
+        
+        // Show/hide selector based on availability
+        if (availableAggregations.length > 0) {
+          $selector.show();
+        } else {
+          $selector.hide();
+        }
+      }
+      
+      // Update all nested selectors in this overlay
+      $overlay.find('.aggregation-selector-nested').each(function() {
+        var $nestedSelector = $(this);
+        console.log('Updating nested selector, available aggregations:', availableAggregations.length);
+        
+        // Clear existing options except the first one
+        $nestedSelector.find('option:not(:first)').remove();
+        
+        // Add available aggregations
+        availableAggregations.forEach(function(agg) {
+          var displayName = agg.name + ' (from ' + agg.elementId + ')';
+          var option = $('<option value="' + agg.id + '">' + displayName + '</option>');
+          $nestedSelector.append(option);
+        });
+        
+        // Show/hide selector based on availability
+        if (availableAggregations.length > 0) {
+          $nestedSelector.show();
+        } else {
+          $nestedSelector.hide();
+        }
+      });
+    }
+    
+    function insertSelectedAggregation() {
+      var selectedTemplateId = $aggSelector.val();
+      if (selectedTemplateId) {
+        var clonedData = cloneAggregation(selectedTemplateId);
+        if (clonedData) {
+          addFieldRow(clonedData, 'aggregation');
+          $aggSelector.val(''); // Reset selector
+        }
+      }
+    }
+    
+    if ($aggSelector && $aggSelector.length) {
+      $aggSelector.on('change', insertSelectedAggregation);
+      updateAggregationSelector(); // Initial update
+    }
+    
+    // Debug button
+    var $debugBtn = $overlay.find('[data-debug-registry]');
+    if ($debugBtn && $debugBtn.length) {
+      $debugBtn.on('click', function() {
+        console.log('=== AGGREGATION REGISTRY DEBUG ===');
+        console.log('Total aggregations:', Object.keys(aggregationRegistry).length);
+        Object.values(aggregationRegistry).forEach(function(agg) {
+          console.log('- ID:', agg.id, '| Name:', agg.name, '| Element:', agg.elementId);
+        });
+        console.log('Raw registry:', aggregationRegistry);
+        alert('Check console for aggregation registry details. Total: ' + Object.keys(aggregationRegistry).length);
+      });
+    }
 
     if ($saveBtn && $saveBtn.length) {
       $saveBtn.on('click', function() {
@@ -757,6 +1078,26 @@ function Comments(eventBus, overlays, bpmnjs) {
         
         // Guardar los campos en el modelo BPMN para persistencia
         var success = saveFieldsToBPMN(json);
+        
+        // Register aggregations after successful save
+        console.log('Save operation result:', success);
+        console.log('JSON data:', json);
+        if (success && json && json.messageStructure && json.messageStructure.children) {
+          console.log('Registering aggregations for element:', element.businessObject.id);
+          registerAggregationsFromData(json.messageStructure.children, element.businessObject.id);
+          updateAllAggregationSelectors(); // Update all selectors globally
+          console.log('Current registry after save:', Object.keys(aggregationRegistry));
+        } else {
+          console.log('Not registering aggregations - conditions not met');
+          console.log('Expected: json.messageStructure.children');
+          console.log('Actual structure keys:', json ? Object.keys(json) : 'json is null');
+          // Force registration anyway if we have valid JSON data
+          if (json && json.messageStructure && json.messageStructure.children) {
+            console.log('Force registering aggregations despite save status');
+            registerAggregationsFromData(json.messageStructure.children, element.businessObject.id);
+            updateAllAggregationSelectors();
+          }
+        }
         
         // TAMBIÉN FORZAR EVENTOS DE GUARDADO GLOBAL
         setTimeout(function() {
@@ -937,6 +1278,10 @@ function Comments(eventBus, overlays, bpmnjs) {
       html: $overlay
     });
 
+    // Scan for any new aggregations and update selectors
+    scanDiagramForAggregations();
+    updateAllAggregationSelectors();
+
     renderComments();
   }
 
@@ -953,6 +1298,16 @@ function Comments(eventBus, overlays, bpmnjs) {
       createCommentBox(element);
     });
 
+  });
+
+  // Listen for diagram import events to refresh aggregation registry
+  eventBus.on('import.done', function() {
+    console.log('Diagram imported, refreshing aggregation registry...');
+    // Clear the registry and rescan the entire diagram
+    aggregationRegistry = {};
+    setTimeout(function() {
+      scanDiagramForAggregations();
+    }, 100); // Small delay to ensure all elements are loaded
   });
 
   this.collapseAll = function() {
@@ -1074,6 +1429,9 @@ Comments.OVERLAY_HTML =
           '<button type="button" class="btn-add" data-add-data-field title="Add Data Field">＋ Data Field</button>' +
 		'<button type="button" class="btn-add" data-add-reference-field title="Add Reference Field">＋ Reference Field</button>' +
 		'<button type="button" class="btn-add" data-add-aggregation-field title="Add Aggregation Field">＋ Aggregation Field</button>' +
+		'<button type="button" class="btn-add" data-add-iteration-field title="Add Iteration Field">＋ Iteration Field</button>' +
+		'<select class="btn-add aggregation-selector" data-select-aggregation title="Select Existing Aggregation" style="max-width: 200px;"><option value="">📋 Seleccionar agregación</option></select>' +
+		// '<button type="button" class="btn-add" data-debug-registry title="Debug Registry" style="font-size: 9px; background: #ffeb3b;">🐛 Debug</button>' +
           '<button type="button" class="btn-save" data-save title="Sync to JSON">Save</button>' +
           '<button type="button" class="btn-clear" data-clear title="Clear fields">Clear</button>' +
         '</div>' +

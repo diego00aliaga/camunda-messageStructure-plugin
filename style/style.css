@@ -111,6 +111,7 @@ body, html {
   gap: 6px;
   padding: 4px 0 0 0;
   justify-content: flex-end;
+  margin:4px;
 
 }
 
@@ -121,6 +122,15 @@ body, html {
   border-radius: 2px;
   padding: 2px 6px;
   cursor: pointer;
+  font-size: 9px;
+}
+
+.comments-overlay .toolbar .aggregation-selector {
+  background: #f0f0f0;
+  border-radius: 2px;
+  border: 2px solid;
+  padding: 2px 6px;
+  cursor: pointer;
   font-size: 11px;
 }
 
@@ -128,7 +138,30 @@ body, html {
 .comments-overlay .toolbar .btn-save:hover,
 .comments-overlay .toolbar .btn-clear:hover,
 .comments-overlay .toolbar .btn-test:hover {
-  background: #e9e9e9;
+  background: #e0e0e0;
+}
+
+.comments-overlay .toolbar .aggregation-selector:hover {
+  background: #e0e0e0;
+  border: 2px solid;
+
+}
+
+.aggregation-selector-nested {
+  background: #fff;
+  border-radius: 2px;
+  border: 2px solid;
+  padding: 2px 4px;
+  cursor: pointer;
+  font-size: 10px;
+  max-width: 150px;
+  margin-left: 5px;
+}
+
+.aggregation-selector-nested:hover {
+  background: #e0e0e0;
+  border: 2px solid;
+
 }
 
 .field-title {
@@ -364,6 +397,16 @@ body, html {
 }
 
 .field-row[data-type="reference"] .field-title {
+  color: #333;
+}
+
+/* Estilos para iteration fields */
+.field-row[data-type="iteration"] {
+  background: #fafafa;
+  width: 70%;
+}
+
+.field-row[data-type="iteration"] .field-title {
   color: #333;
 }
 

@@ -2,6 +2,7 @@
 var registerBpmnJSPlugin = require('camunda-modeler-plugin-helpers').registerBpmnJSPlugin;
 var plugin = require('bpmn-js-embedded-comments');
 
+
 registerBpmnJSPlugin(plugin);
 
 },{"bpmn-js-embedded-comments":2,"camunda-modeler-plugin-helpers":6}],2:[function(require,module,exports){
@@ -18,12 +19,12 @@ var util = require('./util');
 
 
 function Comments(eventBus, overlays, bpmnjs) {
-
   // Global registry for aggregation templates
   var aggregationRegistry = {};
   
   // Function to register an aggregation template
   function registerAggregation(elementId, aggregationData) {
+
     var templateId = elementId + '_' + (aggregationData.name || 'Aggregation');
     aggregationRegistry[templateId] = {
       id: templateId,

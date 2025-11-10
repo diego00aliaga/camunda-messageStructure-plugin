@@ -5,7 +5,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const os = require('os');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const logger = require('../log/logger');
 
 // Configuración de Gemini API
@@ -37,7 +37,39 @@ async function run(plantUMLCode, outputDir = null) {
 **Rol:** Eres un desarrollador backend senior experto en NestJS, arquitectura de software y un maestro en shell scripting (bash).
 **Tarea:** A partir del siguiente diagrama de clases de PlantUML, genera un **único script de bash (.sh)** que cree un proyecto NestJS completo, incluyendo toda la estructura de carpetas y archivos con su contenido.
 **Requisitos del Script Bash:**
-1.  **Crear Proyecto:** El script debe empezar creando un nuevo proyecto NestJS (ej: \`nest new mi-proyecto-backend --skip-git --package-manager npm\`).
+0.  **Configurar PATH y verificar npm/nest (CRÍTICO):** El script DEBE empezar configurando el PATH para incluir las rutas comunes de Node.js y npm. Luego verificar e instalar NestJS CLI si es necesario. Usa algo como:
+    \`\`\`bash
+    # Configurar PATH para incluir Node.js y npm
+    export PATH="$HOME/.nvm/versions/node/\$(nvm version 2>/dev/null || echo 'lts/*')/bin:$PATH"
+    export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+    
+    # Buscar npm en ubicaciones comunes
+    if ! command -v npm &> /dev/null; then
+      # Intentar encontrar npm en ubicaciones comunes
+      if [ -f "$HOME/.nvm/nvm.sh" ]; then
+        source "$HOME/.nvm/nvm.sh"
+      fi
+      if [ -d "/usr/local/bin" ] && [ -f "/usr/local/bin/npm" ]; then
+        export PATH="/usr/local/bin:$PATH"
+      fi
+      if [ -d "/opt/homebrew/bin" ] && [ -f "/opt/homebrew/bin/npm" ]; then
+        export PATH="/opt/homebrew/bin:$PATH"
+      fi
+    fi
+    
+    # Verificar que npm esté disponible
+    if ! command -v npm &> /dev/null; then
+      echo "Error: npm no está disponible. Por favor instala Node.js y npm primero."
+      exit 1
+    fi
+    
+    # Verificar e instalar NestJS CLI si es necesario
+    if ! command -v nest &> /dev/null; then
+      echo "Instalando NestJS CLI..."
+      npm install -g @nestjs/cli
+    fi
+    \`\`\`
+1.  **Crear Proyecto:** Después de asegurar que NestJS CLI está instalado, el script debe crear un nuevo proyecto NestJS (ej: \`nest new mi-proyecto-backend --skip-git --package-manager npm\`).
 2.  **Navegar al Proyecto:** Debe incluir el comando \`cd mi-proyecto-backend\`.
 3.  **Generar Módulos (CLI):** Para cada entidad principal del diagrama, debe usar los comandos de NestJS CLI para generar el módulo, controlador y servicio (ej: \`nest g module modules/usuarios\`, \`nest g controller modules/usuarios --no-spec\`, \`nest g service modules/usuarios --no-spec\`).
 4.  **Escribir Archivos (DTOs y Lógica):** El script debe usar comandos \`cat <<'EOF' > [RUTA_DEL_ARCHIVO]\` para crear o **sobrescribir** los archivos con el contenido completo.
@@ -168,15 +200,122 @@ ${plantUMLCode}
     logger.log('Iniciando ejecución del script... (Esto puede tardar varios minutos)');
     logs.push('Iniciando ejecución del script...');
     
+    // Asegurar que el path sea absoluto
     const scriptPath = path.isAbsolute(outputFilename) 
       ? outputFilename 
-      : path.join(process.cwd(), outputFilename);
+      : path.join(finalOutputDir, outputFilename);
     
-    // Ejecutar el script
-    const child = spawn(scriptPath, [], {
+    // Verificar que el archivo existe antes de ejecutarlo
+    try {
+      await fs.access(scriptPath, fs.constants.F_OK);
+      logger.log(`Script encontrado: ${scriptPath}`);
+    } catch (err) {
+      throw new Error(`El script no existe en: ${scriptPath}`);
+    }
+    
+    // Verificar permisos de ejecución
+    try {
+      await fs.access(scriptPath, fs.constants.X_OK);
+      logger.log(`Script tiene permisos de ejecución`);
+    } catch (err) {
+      logger.log(`Otorgando permisos de ejecución nuevamente...`, 'WARN');
+      await fs.chmod(scriptPath, 0o755);
+    }
+    
+    logger.log(`Ejecutando script: ${scriptPath}`);
+    logger.log(`Directorio de trabajo: ${finalOutputDir}`);
+    
+    // Verificar que npm esté disponible antes de ejecutar
+    logger.log('Verificando que npm esté disponible...');
+    try {
+      const npmCheck = spawn('npm', ['--version'], { stdio: 'pipe' });
+      await new Promise((resolve, reject) => {
+        npmCheck.on('close', (code) => {
+          if (code === 0) {
+            logger.log('npm está disponible');
+            resolve();
+          } else {
+            reject(new Error('npm no está disponible'));
+          }
+        });
+        npmCheck.on('error', reject);
+      });
+    } catch (err) {
+      logger.log('Advertencia: No se pudo verificar npm, continuando de todos modos...', 'WARN');
+    }
+    
+    // En macOS/Linux, ejecutar con bash explícitamente
+    // Usar el path absoluto del script
+    const isWindows = process.platform === 'win32';
+    let command;
+    let args;
+    
+    if (isWindows) {
+      // En Windows, usar cmd
+      command = 'cmd';
+      args = ['/c', scriptPath];
+    } else {
+      // En macOS/Linux, usar bash explícitamente
+      command = '/bin/bash';
+      args = [scriptPath];
+    }
+    
+    logger.log(`Comando: ${command} ${args.join(' ')}`);
+    
+    // Construir un PATH mejorado que incluya rutas comunes de Node.js/npm
+    const homeDir = os.homedir();
+    const commonPaths = [
+      `${homeDir}/.nvm/versions/node/*/bin`,
+      '/usr/local/bin',
+      '/opt/homebrew/bin',
+      '/usr/bin',
+      '/bin',
+      process.env.PATH || ''
+    ].filter(Boolean);
+    
+    // Intentar encontrar npm en ubicaciones comunes
+    let npmPath = null;
+    try {
+      npmPath = execSync('which npm', { encoding: 'utf8' }).trim();
+      logger.log(`npm encontrado en: ${npmPath}`);
+    } catch (err) {
+      // Intentar con rutas comunes
+      const possiblePaths = [
+        '/usr/local/bin/npm',
+        '/opt/homebrew/bin/npm',
+        '/usr/bin/npm'
+      ];
+      
+      for (const possiblePath of possiblePaths) {
+        try {
+          await fs.access(possiblePath, fs.constants.F_OK);
+          npmPath = possiblePath;
+          logger.log(`npm encontrado en ubicación común: ${npmPath}`);
+          break;
+        } catch (e) {
+          // Continuar buscando
+        }
+      }
+    }
+    
+    // Construir PATH mejorado
+    const enhancedPath = [
+      ...commonPaths,
+      ...(npmPath ? [path.dirname(npmPath)] : []),
+      process.env.PATH || ''
+    ].join(':');
+    
+    logger.log(`PATH mejorado: ${enhancedPath.substring(0, 200)}...`);
+    
+    // Ejecutar el script con PATH mejorado
+    const child = spawn(command, args, {
       stdio: ['inherit', 'pipe', 'pipe'],
-      shell: true,
-      cwd: finalOutputDir
+      cwd: finalOutputDir,
+      env: { 
+        ...process.env, 
+        PATH: enhancedPath,
+        HOME: homeDir
+      }
     });
     
     let stdout = '';
@@ -196,12 +335,18 @@ ${plantUMLCode}
     
     // 10. Esperar a que el script termine
     const exitCode = await new Promise((resolve, reject) => {
-      child.on('close', (code) => {
-        resolve(code);
+      // Manejar errores de spawn (cuando no se puede iniciar el proceso)
+      child.on('error', (err) => {
+        logger.log(`Error al ejecutar el script: ${err.message}`, 'ERROR');
+        logger.log(`Comando intentado: ${command} ${args.join(' ')}`, 'ERROR');
+        stderr += `Error al ejecutar: ${err.message}\n`;
+        reject(err);
       });
       
-      child.on('error', (err) => {
-        reject(err);
+      // Manejar cuando el proceso termina
+      child.on('close', (code) => {
+        logger.log(`Script terminó con código: ${code}`);
+        resolve(code);
       });
     });
     
@@ -228,9 +373,21 @@ ${plantUMLCode}
       const errorMessage = `El script falló con código de salida ${exitCode}`;
       logger.log(errorMessage, 'ERROR');
       logs.push(`ERROR: ${errorMessage}`);
-      logs.push(`Stderr: ${stderr}`);
+      if (stdout) {
+        logs.push(`\n--- Salida del Script ---\n${stdout}`);
+      }
+      if (stderr) {
+        logs.push(`\n--- Errores del Script ---\n${stderr}`);
+      }
       
-      throw new Error(errorMessage);
+      // Crear error con logs incluidos
+      const errorWithLogs = new Error(errorMessage);
+      errorWithLogs.logs = logs;
+      errorWithLogs.stdout = stdout;
+      errorWithLogs.stderr = stderr;
+      errorWithLogs.exitCode = exitCode;
+      
+      throw errorWithLogs;
     }
     
   } catch (error) {
@@ -238,7 +395,15 @@ ${plantUMLCode}
     logger.log(errorMessage, 'ERROR');
     logs.push(`ERROR: ${errorMessage}`);
     
-    throw error;
+    // Retornar información del error incluyendo logs si están disponibles
+    // Si el error ya tiene logs (por ejemplo, de un error anterior), preservarlos
+    const errorWithLogs = new Error(errorMessage);
+    errorWithLogs.logs = error.logs || logs;
+    errorWithLogs.stdout = error.stdout || '';
+    errorWithLogs.stderr = error.stderr || error.message;
+    errorWithLogs.exitCode = error.exitCode;
+    
+    throw errorWithLogs;
   }
 }
 

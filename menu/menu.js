@@ -187,33 +187,91 @@ function generateNestJSProject(plantUMLCode, electronApp) {
     .then(function(result) {
       logger.log('Proyecto NestJS generado exitosamente');
       
+      const logs = result.logs || [];
+      const stdout = result.stdout || '';
+      const stderr = result.stderr || '';
+      
+      // Combinar todos los logs
+      const allLogs = [
+        ...logs,
+        ...(stdout ? ['\n--- Salida del Script ---', stdout] : []),
+        ...(stderr ? ['\n--- Errores del Script ---', stderr] : [])
+      ];
+      
       const successMessage = `¡Proyecto NestJS generado exitosamente!\n\n` +
         `Script generado: ${result.scriptPath}\n` +
         `Directorio: ${result.outputDir}\n` +
         `Código de salida: ${result.exitCode}\n\n` +
         `El proyecto ha sido creado y configurado completamente.`;
       
-      // Mostrar diálogo de éxito
+      // Mostrar diálogo de éxito con opción de ver logs
+      const buttons = allLogs.length > 0 ? ['OK', 'Ver Logs'] : ['OK'];
+      
       htmlDialog.showSuccessDialog(
         webContents,
         'Proyecto Generado',
         'El proyecto NestJS ha sido generado exitosamente',
         successMessage,
-        ['OK']
-      ).catch(function(err) {
+        buttons
+      ).then(function(buttonIndex) {
+        // Si el usuario presionó "Ver Logs" (índice 1)
+        if (buttonIndex === 1 && allLogs.length > 0) {
+          // Mostrar logs en un nuevo diálogo
+          htmlDialog.showInfoDialog(
+            webContents,
+            'Logs del Proceso de Generación',
+            'Registro completo del proceso:',
+            allLogs.join('\n'),
+            ['OK']
+          ).catch(function(err) {
+            logger.log(`Error mostrando diálogo de logs: ${err.message}`, 'ERROR');
+          });
+        }
+      }).catch(function(err) {
         logger.log(`Error mostrando diálogo de éxito: ${err.message}`, 'ERROR');
       });
     })
     .catch(function(error) {
       logger.log(`Error generando proyecto NestJS: ${error.message}`, 'ERROR');
       
-      // Mostrar error
+      // Obtener logs del error si están disponibles
+      const errorLogs = error.logs || [];
+      const errorStdout = error.stdout || '';
+      const errorStderr = error.stderr || error.message || '';
+      
+      // Combinar todos los logs del error
+      const allErrorLogs = [
+        ...errorLogs,
+        ...(errorStdout ? ['\n--- Salida del Script ---', errorStdout] : []),
+        ...(errorStderr ? ['\n--- Errores ---', errorStderr] : [])
+      ];
+      
+      const errorMessage = error.message || 'Error desconocido';
+      
+      // Mostrar error con opción de ver logs si están disponibles
+      const buttons = allErrorLogs.length > 0 ? ['OK', 'Ver Logs'] : ['OK'];
+      
       htmlDialog.showErrorDialog(
         webContents,
         'Error al Generar Proyecto',
         'Ocurrió un error al generar el proyecto NestJS',
-        error.message || 'Error desconocido'
-      ).catch(function(err) {
+        errorMessage,
+        buttons
+      ).then(function(buttonIndex) {
+        // Si el usuario presionó "Ver Logs" (índice 1)
+        if (buttonIndex === 1 && allErrorLogs.length > 0) {
+          // Mostrar logs en un nuevo diálogo
+          htmlDialog.showInfoDialog(
+            webContents,
+            'Logs del Error',
+            'Registro completo del error:',
+            allErrorLogs.join('\n'),
+            ['OK']
+          ).catch(function(err) {
+            logger.log(`Error mostrando diálogo de logs: ${err.message}`, 'ERROR');
+          });
+        }
+      }).catch(function(err) {
         logger.log(`Error mostrando diálogo de error: ${err.message}`, 'ERROR');
       });
     });

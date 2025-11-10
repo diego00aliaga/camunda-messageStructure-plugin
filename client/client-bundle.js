@@ -19,6 +19,12 @@ var util = require('./util');
 
 
 function Comments(eventBus, overlays, bpmnjs) {
+  // Exponer bpmnjs globalmente para acceso desde el menú
+  if (typeof window !== 'undefined' && bpmnjs) {
+    window.__pluginBpmnjs = bpmnjs;
+    console.log('✅ bpmnjs expuesto globalmente en window.__pluginBpmnjs');
+  }
+  
   // Global registry for aggregation templates
   var aggregationRegistry = {};
   

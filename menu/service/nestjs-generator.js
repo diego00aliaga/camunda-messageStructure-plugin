@@ -13,27 +13,10 @@ const URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-
 const API_KEY = "AIzaSyD7pA4UTuDDN5Y67CvtRsx8ZHr545cA4Fg";
 
 /**
- * Genera un proyecto NestJS completo a partir de un diagrama PlantUML
- * @param {string} plantUMLCode - Código del diagrama PlantUML
- * @param {string} outputDir - Directorio donde se generará el proyecto (opcional, por defecto directorio actual)
- * @returns {Promise<Object>} Objeto con información sobre el proceso
+ * Genera el prompt para crear un script bash (macOS/Linux)
  */
-async function run(plantUMLCode, outputDir = null) {
-  const logs = [];
-  
-  try {
-    logger.log('NestJS Generator Service iniciado');
-    logs.push('NestJS Generator Service iniciado');
-    
-    if (!plantUMLCode || plantUMLCode.trim().length === 0) {
-      throw new Error('El código PlantUML está vacío');
-    }
-    
-    logs.push(`PlantUML recibido: ${plantUMLCode.length} caracteres`);
-    logger.log(`Generando script bash para NestJS...`);
-    
-    // 1. Crear el prompt para Gemini
-    const prompt = `
+function generateBashPrompt(plantUMLCode) {
+  return `
 **Rol:** Eres un desarrollador backend senior experto en NestJS, arquitectura de software y un maestro en shell scripting (bash).
 **Tarea:** A partir del siguiente diagrama de clases de PlantUML, genera un **único script de bash (.sh)** que cree un proyecto NestJS completo, incluyendo toda la estructura de carpetas y archivos con su contenido.
 **Requisitos del Script Bash:**
@@ -84,6 +67,93 @@ Responde **únicamente** con el script de bash, comenzando con \`#!/bin/bash\` y
 ${plantUMLCode}
 \`\`\`
 `;
+}
+
+/**
+ * Genera el prompt para crear un script batch (Windows)
+ */
+function generateBatchPrompt(plantUMLCode) {
+  return `
+**Rol:** Eres un desarrollador backend senior experto en NestJS, arquitectura de software y un maestro en scripting de Windows (batch/cmd).
+**Tarea:** A partir del siguiente diagrama de clases de PlantUML, genera un **único script de batch (.bat)** que cree un proyecto NestJS completo, incluyendo toda la estructura de carpetas y archivos con su contenido.
+**Requisitos del Script Batch:**
+0.  **Configurar PATH y verificar npm/nest (CRÍTICO):** El script DEBE empezar configurando el PATH para incluir las rutas comunes de Node.js y npm en Windows. Luego verificar e instalar NestJS CLI si es necesario. Usa algo como:
+    \`\`\`batch
+    @echo off
+    setlocal enabledelayedexpansion
+    
+    REM Configurar PATH para incluir Node.js y npm
+    set "NODE_PATH=C:\\Program Files\\nodejs"
+    if exist "C:\\Program Files (x86)\\nodejs" set "NODE_PATH=C:\\Program Files (x86)\\nodejs"
+    set "PATH=%NODE_PATH%;%APPDATA%\\npm;%PATH%"
+    
+    REM Verificar que npm esté disponible
+    where npm >nul 2>&1
+    if errorlevel 1 (
+      echo Error: npm no está disponible. Por favor instala Node.js y npm primero.
+      exit /b 1
+    )
+    
+    REM Verificar e instalar NestJS CLI si es necesario
+    where nest >nul 2>&1
+    if errorlevel 1 (
+      echo Instalando NestJS CLI...
+      call npm install -g @nestjs/cli
+    )
+    \`\`\`
+1.  **Crear Proyecto:** Después de asegurar que NestJS CLI está instalado, el script debe crear un nuevo proyecto NestJS (ej: \`nest new mi-proyecto-backend --skip-git --package-manager npm\`).
+2.  **Navegar al Proyecto:** Debe incluir el comando \`cd mi-proyecto-backend\`.
+3.  **Generar Módulos (CLI):** Para cada entidad principal del diagrama, debe usar los comandos de NestJS CLI para generar el módulo, controlador y servicio (ej: \`nest g module modules/usuarios\`, \`nest g controller modules/usuarios --no-spec\`, \`nest g service modules/usuarios --no-spec\`).
+4.  **Escribir Archivos (DTOs y Lógica):** El script debe usar comandos de Windows para crear o **sobrescribir** los archivos con el contenido completo. Usa bloques de texto con redirección (ej: \`(echo contenido) > archivo.ts\` o bloques múltiples con \`>>\`).
+    * **DTOs:** Debe crear las carpetas \`dto\` (ej: \`if not exist "src\\modules\\usuarios\\dto" mkdir "src\\modules\\usuarios\\dto"\`) y escribir los archivos \`create-usuario.dto.ts\` y \`update-usuario.dto.ts\` con las propiedades del diagrama.
+    * **Servicios:** Debe **sobrescribir** el archivo \`*.service.ts\` generado por el CLI con la lógica CRUD completa (create, findAll, findOne, update, remove) que use los DTOs.
+    * **Controladores:** Debe **sobrescribir** el archivo \`*.controller.ts\` con todos los endpoints RESTful (@Post, @Get, @Patch, @Delete) que se conecten al servicio.
+    * **Módulos:** Debe **sobrescribir** el archivo \`*.module.ts\` para asegurarse de que el controlador y el servicio estén correctamente importados.
+**Notas importantes para Windows:**
+- Usa rutas con barras invertidas (\\) o barras normales (/) según sea necesario
+- Usa \`call\` antes de comandos npm/nest para asegurar que el script continúe después de ejecutarlos
+- Para escribir archivos multilínea, usa bloques con paréntesis y redirección, o crea archivos temporales
+- Usa \`@echo off\` al inicio para evitar mostrar comandos
+- Usa \`setlocal enabledelayedexpansion\` si necesitas variables en bucles
+**Formato de Salida:**
+Responde **únicamente** con el script de batch, comenzando con \`@echo off\` y nada más. No incluyas explicaciones, solo el código del script.
+**Diagrama PlantUML de entrada:**
+\`\`\`plantuml
+${plantUMLCode}
+\`\`\`
+`;
+}
+
+/**
+ * Genera un proyecto NestJS completo a partir de un diagrama PlantUML
+ * @param {string} plantUMLCode - Código del diagrama PlantUML
+ * @param {string} outputDir - Directorio donde se generará el proyecto (opcional, por defecto directorio actual)
+ * @returns {Promise<Object>} Objeto con información sobre el proceso
+ */
+async function run(plantUMLCode, outputDir = null) {
+  const logs = [];
+  
+  try {
+    logger.log('NestJS Generator Service iniciado');
+    logs.push('NestJS Generator Service iniciado');
+    
+    if (!plantUMLCode || plantUMLCode.trim().length === 0) {
+      throw new Error('El código PlantUML está vacío');
+    }
+    
+    // Detectar la plataforma del sistema operativo
+    const isWindows = process.platform === 'win32';
+    const isMacOS = process.platform === 'darwin';
+    const isLinux = process.platform === 'linux';
+    
+    logs.push(`PlantUML recibido: ${plantUMLCode.length} caracteres`);
+    logger.log(`Plataforma detectada: ${isWindows ? 'Windows' : isMacOS ? 'macOS' : isLinux ? 'Linux' : 'Otro'}`);
+    
+    // 1. Crear el prompt para Gemini según la plataforma
+    const prompt = isWindows ? generateBatchPrompt(plantUMLCode) : generateBashPrompt(plantUMLCode);
+    const scriptType = isWindows ? 'batch (.bat)' : 'bash (.sh)';
+    logger.log(`Generando script ${scriptType} para NestJS...`);
+    logs.push(`Generando script ${scriptType} para ${isWindows ? 'Windows' : 'macOS/Linux'}...`);
 
     // 2. Preparar el payload para Gemini
     const payload = {
@@ -128,22 +198,42 @@ ${plantUMLCode}
     let generatedScript = data.candidates[0].content.parts[0].text;
     
     // Limpiar el script (remover markdown code blocks si existen)
-    generatedScript = generatedScript
-      .replace(/^```bash\n?/i, '')
-      .replace(/^```sh\n?/i, '')
-      .replace(/^```\n?/, '')
-      .replace(/\n```$/, '')
-      .replace(/\n```bash$/, '')
-      .replace(/\n```sh$/, '')
-      .trim();
-    
-    // Asegurar que empiece con shebang
-    if (!generatedScript.startsWith('#!/bin/bash') && !generatedScript.startsWith('#!/bin/sh')) {
-      generatedScript = '#!/bin/bash\n\n' + generatedScript;
+    if (isWindows) {
+      // Para scripts batch de Windows
+      generatedScript = generatedScript
+        .replace(/^```batch\n?/i, '')
+        .replace(/^```cmd\n?/i, '')
+        .replace(/^```bat\n?/i, '')
+        .replace(/^```\n?/, '')
+        .replace(/\n```$/, '')
+        .replace(/\n```batch$/i, '')
+        .replace(/\n```cmd$/i, '')
+        .replace(/\n```bat$/i, '')
+        .trim();
+      
+      // Asegurar que empiece con @echo off
+      if (!generatedScript.toLowerCase().includes('@echo off') && !generatedScript.toLowerCase().includes('@echo')) {
+        generatedScript = '@echo off\nsetlocal enabledelayedexpansion\n\n' + generatedScript;
+      }
+    } else {
+      // Para scripts bash de macOS/Linux
+      generatedScript = generatedScript
+        .replace(/^```bash\n?/i, '')
+        .replace(/^```sh\n?/i, '')
+        .replace(/^```\n?/, '')
+        .replace(/\n```$/, '')
+        .replace(/\n```bash$/, '')
+        .replace(/\n```sh$/, '')
+        .trim();
+      
+      // Asegurar que empiece con shebang
+      if (!generatedScript.startsWith('#!/bin/bash') && !generatedScript.startsWith('#!/bin/sh')) {
+        generatedScript = '#!/bin/bash\n\n' + generatedScript;
+      }
     }
     
-    logger.log(`Script generado: ${generatedScript.length} caracteres`);
-    logs.push(`Script generado exitosamente: ${generatedScript.length} caracteres`);
+    logger.log(`Script ${scriptType} generado: ${generatedScript.length} caracteres`);
+    logs.push(`Script ${scriptType} generado exitosamente: ${generatedScript.length} caracteres`);
     
     // 6. Determinar el directorio de salida (usar directorio home si process.cwd() no es válido)
     let finalOutputDir = outputDir;
@@ -182,19 +272,34 @@ ${plantUMLCode}
       finalOutputDir = os.tmpdir();
     }
     
-    const outputFilename = path.join(finalOutputDir, 'generar-backend.sh');
+    // Determinar la extensión del archivo según la plataforma
+    const scriptExtension = isWindows ? '.bat' : '.sh';
+    const outputFilename = path.join(finalOutputDir, `generar-backend${scriptExtension}`);
     logger.log(`Directorio de salida: ${finalOutputDir}`);
     logger.log(`Archivo de salida: ${outputFilename}`);
+    logger.log(`Tipo de script: ${scriptType}`);
     
-    // 7. Guardar el script
+    // 7. Guardar el script con la codificación correcta
+    // Windows batch scripts deben guardarse con codificación adecuada (utf8 funciona en la mayoría de los casos)
     await fs.writeFile(outputFilename, generatedScript, 'utf8');
     logger.log(`Script guardado en: ${outputFilename}`);
-    logs.push(`Script guardado en: ${outputFilename}`);
+    logs.push(`Script ${scriptType} guardado en: ${outputFilename}`);
     
-    // 8. Dar permisos de ejecución
-    await fs.chmod(outputFilename, 0o755);
-    logger.log('Permisos de ejecución otorgados');
-    logs.push('Permisos de ejecución otorgados (chmod +x)');
+    // 8. Dar permisos de ejecución (solo en macOS/Linux - Unix-like systems)
+    // En Windows, los permisos funcionan diferente y no se necesita chmod
+    if (!isWindows) {
+      try {
+        await fs.chmod(outputFilename, 0o755);
+        logger.log('Permisos de ejecución otorgados (chmod +x)');
+        logs.push('Permisos de ejecución otorgados (chmod +x) - macOS/Linux');
+      } catch (err) {
+        logger.log(`Advertencia: No se pudieron otorgar permisos de ejecución: ${err.message}`, 'WARN');
+        logs.push(`Advertencia: Permisos de ejecución: ${err.message}`);
+      }
+    } else {
+      logger.log('Windows detectado: No se requieren permisos chmod (Windows maneja permisos diferente)');
+      logs.push('Windows detectado: Los permisos de archivos se manejan automáticamente');
+    }
     
     // 9. Ejecutar el script automáticamente
     logger.log('Iniciando ejecución del script... (Esto puede tardar varios minutos)');
@@ -213,17 +318,24 @@ ${plantUMLCode}
       throw new Error(`El script no existe en: ${scriptPath}`);
     }
     
-    // Verificar permisos de ejecución
-    try {
-      await fs.access(scriptPath, fs.constants.X_OK);
-      logger.log(`Script tiene permisos de ejecución`);
-    } catch (err) {
-      logger.log(`Otorgando permisos de ejecución nuevamente...`, 'WARN');
-      await fs.chmod(scriptPath, 0o755);
+    // Verificar permisos de ejecución (solo en sistemas Unix-like)
+    if (!isWindows) {
+      try {
+        await fs.access(scriptPath, fs.constants.X_OK);
+        logger.log(`Script tiene permisos de ejecución`);
+      } catch (err) {
+        logger.log(`Otorgando permisos de ejecución nuevamente...`, 'WARN');
+        try {
+          await fs.chmod(scriptPath, 0o755);
+        } catch (chmodErr) {
+          logger.log(`No se pudieron otorgar permisos: ${chmodErr.message}`, 'WARN');
+        }
+      }
     }
     
     logger.log(`Ejecutando script: ${scriptPath}`);
     logger.log(`Directorio de trabajo: ${finalOutputDir}`);
+    logger.log(`Plataforma: ${process.platform} (${isWindows ? 'Windows' : isMacOS ? 'macOS' : isLinux ? 'Linux' : 'Otro'})`);
     
     // Verificar que npm esté disponible antes de ejecutar
     logger.log('Verificando que npm esté disponible...');
@@ -244,56 +356,97 @@ ${plantUMLCode}
       logger.log('Advertencia: No se pudo verificar npm, continuando de todos modos...', 'WARN');
     }
     
-    // En macOS/Linux, ejecutar con bash explícitamente
-    // Usar el path absoluto del script
-    const isWindows = process.platform === 'win32';
+    // Configurar el comando de ejecución según la plataforma
     let command;
     let args;
     
     if (isWindows) {
-      // En Windows, usar cmd
+      // En Windows, ejecutar el script .bat directamente con cmd
       command = 'cmd';
       args = ['/c', scriptPath];
+      logger.log('Ejecutando script batch de Windows con cmd');
     } else {
-      // En macOS/Linux, usar bash explícitamente
+      // En macOS/Linux, usar bash explícitamente para ejecutar el script .sh
       command = '/bin/bash';
       args = [scriptPath];
+      logger.log('Ejecutando script bash con /bin/bash');
     }
     
     logger.log(`Comando: ${command} ${args.join(' ')}`);
     
     // Construir un PATH mejorado que incluya rutas comunes de Node.js/npm
     const homeDir = os.homedir();
-    const commonPaths = [
-      `${homeDir}/.nvm/versions/node/*/bin`,
-      '/usr/local/bin',
-      '/opt/homebrew/bin',
-      '/usr/bin',
-      '/bin',
-      process.env.PATH || ''
-    ].filter(Boolean);
-    
-    // Intentar encontrar npm en ubicaciones comunes
+    let commonPaths = [];
     let npmPath = null;
-    try {
-      npmPath = execSync('which npm', { encoding: 'utf8' }).trim();
-      logger.log(`npm encontrado en: ${npmPath}`);
-    } catch (err) {
-      // Intentar con rutas comunes
-      const possiblePaths = [
-        '/usr/local/bin/npm',
-        '/opt/homebrew/bin/npm',
-        '/usr/bin/npm'
-      ];
+    const pathSeparator = isWindows ? ';' : ':';
+    
+    if (isWindows) {
+      // Rutas comunes en Windows para Node.js/npm
+      commonPaths = [
+        path.join(homeDir, 'AppData', 'Roaming', 'npm'),
+        'C:\\Program Files\\nodejs',
+        'C:\\Program Files (x86)\\nodejs',
+        process.env.PATH || ''
+      ].filter(Boolean);
       
-      for (const possiblePath of possiblePaths) {
-        try {
-          await fs.access(possiblePath, fs.constants.F_OK);
-          npmPath = possiblePath;
-          logger.log(`npm encontrado en ubicación común: ${npmPath}`);
-          break;
-        } catch (e) {
-          // Continuar buscando
+      // Intentar encontrar npm en Windows
+      try {
+        const whereResult = execSync('where npm', { encoding: 'utf8', stdio: 'pipe' }).trim();
+        if (whereResult && whereResult.length > 0) {
+          npmPath = whereResult.split('\n')[0].trim();
+          logger.log(`npm encontrado en: ${npmPath}`);
+        }
+      } catch (err) {
+        // Intentar con rutas comunes de Windows
+        const possiblePaths = [
+          'C:\\Program Files\\nodejs\\npm.cmd',
+          'C:\\Program Files (x86)\\nodejs\\npm.cmd',
+          path.join(homeDir, 'AppData', 'Roaming', 'npm', 'npm.cmd')
+        ];
+        
+        for (const possiblePath of possiblePaths) {
+          try {
+            await fs.access(possiblePath, fs.constants.F_OK);
+            npmPath = possiblePath;
+            logger.log(`npm encontrado en ubicación común: ${npmPath}`);
+            break;
+          } catch (e) {
+            // Continuar buscando
+          }
+        }
+      }
+    } else {
+      // Rutas comunes en macOS/Linux para Node.js/npm
+      commonPaths = [
+        `${homeDir}/.nvm/versions/node/*/bin`,
+        '/usr/local/bin',
+        '/opt/homebrew/bin',
+        '/usr/bin',
+        '/bin',
+        process.env.PATH || ''
+      ].filter(Boolean);
+      
+      // Intentar encontrar npm en macOS/Linux
+      try {
+        npmPath = execSync('which npm', { encoding: 'utf8' }).trim();
+        logger.log(`npm encontrado en: ${npmPath}`);
+      } catch (err) {
+        // Intentar con rutas comunes
+        const possiblePaths = [
+          '/usr/local/bin/npm',
+          '/opt/homebrew/bin/npm',
+          '/usr/bin/npm'
+        ];
+        
+        for (const possiblePath of possiblePaths) {
+          try {
+            await fs.access(possiblePath, fs.constants.F_OK);
+            npmPath = possiblePath;
+            logger.log(`npm encontrado en ubicación común: ${npmPath}`);
+            break;
+          } catch (e) {
+            // Continuar buscando
+          }
         }
       }
     }
@@ -303,7 +456,7 @@ ${plantUMLCode}
       ...commonPaths,
       ...(npmPath ? [path.dirname(npmPath)] : []),
       process.env.PATH || ''
-    ].join(':');
+    ].join(pathSeparator);
     
     logger.log(`PATH mejorado: ${enhancedPath.substring(0, 200)}...`);
     

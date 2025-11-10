@@ -1,4 +1,5 @@
 
+const { dialog } = require('electron');
 const geminiService = require('./service/gemini-service');
 const xmlParser = require('./service/xml-parse');
 const logger = require('./log/logger');
@@ -71,6 +72,20 @@ module.exports = function (electronApp, menuState) {
           var parsedData = xmlParser.parseDataFieldsFromXML(xml);
           logger.log(`Datos parseados, longitud: ${parsedData.length}`);
           
+          // Mostrar diálogo de progreso mientras se genera el diagrama UML
+          if (electronApp.mainWindow && electronApp.mainWindow.webContents) {
+            htmlDialog.showInfoDialog(
+              electronApp.mainWindow.webContents,
+              'Generando Diagrama UML',
+              'Procesando con Gemini AI...',
+              'Por favor espera mientras se genera el diagrama PlantUML a partir de tu diagrama BPMN.\n\nEsto puede tardar unos segundos.\n\nNo cierres esta ventana.',
+              ['OK']
+            ).catch(function(err) {
+              // Ignorar errores al mostrar el diálogo de progreso
+              logger.log(`Error mostrando diálogo de progreso: ${err.message}`, 'WARN');
+            });
+          }
+          
           // Paso 3: Llamar a Gemini Service con los datos parseados
           return geminiService.run(parsedData);
         })
@@ -94,14 +109,15 @@ module.exports = function (electronApp, menuState) {
           
           const detailWithMetadata = fullDetail + metadataText;
           
-          // Mostrar resultado en un diálogo HTML
+          // Mostrar resultado en un diálogo HTML (cerrando el diálogo de progreso)
           if (electronApp.mainWindow && electronApp.mainWindow.webContents) {
             htmlDialog.showSuccessDialog(
               electronApp.mainWindow.webContents,
               'Diagrama UML Generado',
               'Diagrama PlantUML generado exitosamente',
               detailWithMetadata,
-              logs.length > 0 ? ['Generar Código', 'Ver Logs'] : ['Generar Código']
+              logs.length > 0 ? ['Generar Código', 'Ver Logs'] : ['Generar Código'],
+              true  // closeExisting = true para cerrar el diálogo de progreso
             ).then(function(buttonIndex) {
               // Si el usuario presionó "Generar Código" (índice 0)
               if (buttonIndex === 0) {
@@ -110,12 +126,12 @@ module.exports = function (electronApp, menuState) {
                   electronApp.mainWindow.webContents,
                   'Generar Proyecto NestJS',
                   'Se generará un proyecto NestJS completo a partir del diagrama UML.',
-                  'Esto puede tardar varios minutos. El proyecto se creará en el directorio actual.\n\n¿Deseas continuar?',
+                  'Esto puede tardar varios minutos. Se te pedirá que selecciones el directorio donde se creará el proyecto.\n\n¿Deseas continuar?',
                   ['Cancelar', 'Continuar']
                 ).then(function(confirmIndex) {
                   if (confirmIndex === 1) {
-                    // Usuario confirmó, generar el proyecto
-                    generateNestJSProject(plantUMLCode, electronApp);
+                    // Usuario confirmó, mostrar diálogo para seleccionar directorio
+                    selectOutputDirectory(plantUMLCode, electronApp);
                   }
                 }).catch(function(err) {
                   logger.log(`Error mostrando diálogo de confirmación: ${err.message}`, 'ERROR');
@@ -142,13 +158,15 @@ module.exports = function (electronApp, menuState) {
         .catch(function(error) {
           logger.log(`Error al ejecutar Gemini: ${error.message}`, 'ERROR');
           
-          // Mostrar error al usuario usando diálogo HTML
+          // Mostrar error al usuario usando diálogo HTML (cerrando el diálogo de progreso)
           if (electronApp.mainWindow && electronApp.mainWindow.webContents) {
             htmlDialog.showErrorDialog(
               electronApp.mainWindow.webContents,
               'Error',
               'Error al ejecutar Gemini',
-              error.message || 'Error desconocido'
+              error.message || 'Error desconocido',
+              ['OK'],
+              true  // closeExisting = true para cerrar el diálogo de progreso
             ).catch(function(err) {
               logger.log(`Error mostrando diálogo de error: ${err.message}`, 'ERROR');
             });
@@ -159,9 +177,53 @@ module.exports = function (electronApp, menuState) {
 ]}
 
 /**
+ * Función auxiliar para seleccionar el directorio de salida
+ */
+function selectOutputDirectory(plantUMLCode, electronApp) {
+  if (!electronApp || !electronApp.mainWindow) {
+    logger.log('No hay acceso a la ventana principal', 'ERROR');
+    return;
+  }
+  
+  const BrowserWindow = require('electron').BrowserWindow;
+  const focusedWindow = BrowserWindow.getFocusedWindow() || electronApp.mainWindow;
+  
+  // Mostrar diálogo para seleccionar directorio
+  dialog.showOpenDialog(focusedWindow, {
+    title: 'Seleccionar directorio para el proyecto NestJS',
+    defaultPath: require('os').homedir(),
+    properties: ['openDirectory', 'createDirectory']
+  }).then(function(result) {
+    if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+      const selectedDir = result.filePaths[0];
+      logger.log(`Directorio seleccionado: ${selectedDir}`);
+      
+      // Generar el proyecto en el directorio seleccionado
+      generateNestJSProject(plantUMLCode, electronApp, selectedDir);
+    } else {
+      logger.log('Usuario canceló la selección de directorio');
+    }
+  }).catch(function(err) {
+    logger.log(`Error al seleccionar directorio: ${err.message}`, 'ERROR');
+    
+    // Mostrar error al usuario
+    if (electronApp.mainWindow && electronApp.mainWindow.webContents) {
+      htmlDialog.showErrorDialog(
+        electronApp.mainWindow.webContents,
+        'Error',
+        'Error al seleccionar directorio',
+        err.message || 'Error desconocido'
+      ).catch(function(dialogErr) {
+        logger.log(`Error mostrando diálogo de error: ${dialogErr.message}`, 'ERROR');
+      });
+    }
+  });
+}
+
+/**
  * Función auxiliar para generar el proyecto NestJS
  */
-function generateNestJSProject(plantUMLCode, electronApp) {
+function generateNestJSProject(plantUMLCode, electronApp, outputDir = null) {
   if (!electronApp || !electronApp.mainWindow || !electronApp.mainWindow.webContents) {
     logger.log('No hay acceso a webContents para mostrar diálogos', 'ERROR');
     return;
@@ -181,9 +243,12 @@ function generateNestJSProject(plantUMLCode, electronApp) {
   });
   
   logger.log('Iniciando generación del proyecto NestJS...');
+  if (outputDir) {
+    logger.log(`Directorio de salida seleccionado: ${outputDir}`);
+  }
   
-  // Generar el proyecto
-  nestjsGenerator.run(plantUMLCode)
+  // Generar el proyecto en el directorio seleccionado
+  nestjsGenerator.run(plantUMLCode, outputDir)
     .then(function(result) {
       logger.log('Proyecto NestJS generado exitosamente');
       

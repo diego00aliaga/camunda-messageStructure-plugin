@@ -27,6 +27,28 @@ const DIALOG_CSS = [
 ].join(' ');
 
 /**
+ * Cierra todos los diálogos HTML existentes
+ * @param {Object} webContents - webContents de Electron
+ * @returns {Promise<void>}
+ */
+function closeAllDialogs(webContents) {
+  const script = `
+    (function() {
+      // Cerrar todos los overlays de diálogos
+      const overlays = document.querySelectorAll('.html-dialog-overlay');
+      overlays.forEach(function(overlay) {
+        overlay.remove();
+      });
+    })()
+  `;
+  
+  return webContents.executeJavaScript(script).catch(function(err) {
+    // Ignorar errores al cerrar diálogos
+    console.warn('Error cerrando diálogos:', err);
+  });
+}
+
+/**
  * Muestra un diálogo HTML en el proceso de renderizado
  * @param {Object} webContents - webContents de Electron donde se mostrará el diálogo
  * @param {Object} options - Opciones del diálogo
@@ -35,9 +57,29 @@ const DIALOG_CSS = [
  * @param {string} options.message - Mensaje principal
  * @param {string} options.detail - Detalle adicional (opcional)
  * @param {Array} options.buttons - Array de botones: ['OK', 'Cancel'] (opcional)
+ * @param {boolean} options.closeExisting - Si es true, cierra diálogos existentes antes de mostrar este (default: false)
  * @returns {Promise<number>} Promise que se resuelve con el índice del botón presionado (-1 si se cerró)
  */
 function showHTMLDialog(webContents, options = {}) {
+  const {
+    closeExisting = false
+  } = options;
+  
+  // Si se solicita cerrar diálogos existentes, hacerlo primero
+  if (closeExisting) {
+    return closeAllDialogs(webContents).then(function() {
+      // Continuar con la creación del nuevo diálogo
+      return showHTMLDialogInternal(webContents, options);
+    });
+  } else {
+    return showHTMLDialogInternal(webContents, options);
+  }
+}
+
+/**
+ * Función interna para mostrar un diálogo HTML
+ */
+function showHTMLDialogInternal(webContents, options = {}) {
   const {
     type = 'info',
     title = 'Diálogo',
@@ -49,28 +91,28 @@ function showHTMLDialog(webContents, options = {}) {
   // Definir colores según el tipo
   const typeStyles = {
     info: {
-      icon: 'ℹ️',
-      borderColor: '#2196F3',
-      headerBg: '#E3F2FD',
-      iconBg: '#2196F3'
+      icon: 'ℹ',
+      borderColor: '#FFFFFF',
+      headerBg: '#FFFFFF',
+      iconBg: '#FC5D0D'
     },
     error: {
-      icon: '❌',
+      icon: 'X',
       borderColor: '#F44336',
       headerBg: '#FFEBEE',
       iconBg: '#F44336'
     },
     warning: {
-      icon: '⚠️',
+      icon: '',
       borderColor: '#FF9800',
       headerBg: '#FFF3E0',
       iconBg: '#FF9800'
     },
     success: {
-      icon: '✅',
-      borderColor: '#4CAF50',
-      headerBg: '#E8F5E9',
-      iconBg: '#4CAF50'
+      icon: '✓',
+      borderColor: '#FFFFFF',
+      headerBg: '#FFFFFF',
+      iconBg: '#FC5D0D'
     }
   };
 
@@ -231,52 +273,56 @@ function showHTMLDialog(webContents, options = {}) {
 /**
  * Muestra un diálogo de información
  */
-function showInfoDialog(webContents, title, message, detail, buttons = ['OK']) {
+function showInfoDialog(webContents, title, message, detail, buttons = ['OK'], closeExisting = false) {
   return showHTMLDialog(webContents, {
     type: 'info',
     title,
     message,
     detail,
-    buttons
+    buttons,
+    closeExisting
   });
 }
 
 /**
  * Muestra un diálogo de error
  */
-function showErrorDialog(webContents, title, message, detail, buttons = ['OK']) {
+function showErrorDialog(webContents, title, message, detail, buttons = ['OK'], closeExisting = false) {
   return showHTMLDialog(webContents, {
     type: 'error',
     title,
     message,
     detail,
-    buttons
+    buttons,
+    closeExisting
   });
 }
 
 /**
  * Muestra un diálogo de advertencia
  */
-function showWarningDialog(webContents, title, message, detail, buttons = ['OK']) {
+function showWarningDialog(webContents, title, message, detail, buttons = ['OK'], closeExisting = false) {
   return showHTMLDialog(webContents, {
     type: 'warning',
     title,
     message,
     detail,
-    buttons
+    buttons,
+    closeExisting
   });
 }
 
 /**
  * Muestra un diálogo de éxito
  */
-function showSuccessDialog(webContents, title, message, detail, buttons = ['OK']) {
+function showSuccessDialog(webContents, title, message, detail, buttons = ['OK'], closeExisting = false) {
   return showHTMLDialog(webContents, {
     type: 'success',
     title,
     message,
     detail,
-    buttons
+    buttons,
+    closeExisting
   });
 }
 
@@ -285,5 +331,6 @@ module.exports = {
   showInfoDialog,
   showErrorDialog,
   showWarningDialog,
-  showSuccessDialog
+  showSuccessDialog,
+  closeAllDialogs
 };

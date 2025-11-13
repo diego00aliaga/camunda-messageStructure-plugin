@@ -1,1 +1,8 @@
 /node_modules/
+
+# Archivos de configuración con información sensible
+.env
+.env.local
+.env.*.local
+config.json
+*.key

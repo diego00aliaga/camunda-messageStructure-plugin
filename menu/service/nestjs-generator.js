@@ -3,22 +3,43 @@
  */
 
 const fs = require('fs').promises;
-const path = require('path');
 const os = require('os');
 const { spawn, execSync } = require('child_process');
 const logger = require('../log/logger');
+const path = require('path'); // Añadir import de path
 
 // Configuración de Gemini API
 const URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-const API_KEY = "AIzaSyD7pA4UTuDDN5Y67CvtRsx8ZHr545cA4Fg";
+
+// Función para obtener la API Key de config.json
+function getApiKey() {
+  const configPath = path.resolve(__dirname, '../../config.json');
+  let config;
+
+  try {
+    config = require(configPath);
+  } catch (error) {
+    const errorMsg = `Error al cargar config.json en nestjs-generator. Asegúrate de que el archivo existe en la raíz del plugin y tiene el formato correcto.\n\nRuta esperada: ${configPath}\n\nError: ${error.message}`;
+    logger.log(errorMsg, 'ERROR');
+    throw new Error(errorMsg);
+  }
+
+  const apiKey = config.GEMINI_API_KEY;
+  if (!apiKey) {
+    const errorMsg = 'GEMINI_API_KEY no está configurada en config.json para nestjs-generator. Por favor, asegúrate de que el archivo config.json contiene la clave GEMINI_API_KEY con tu API key de Google AI Studio.\n\nRuta del archivo: ' + configPath;
+    logger.log(errorMsg, 'ERROR');
+    throw new Error(errorMsg);
+  }
+  return apiKey;
+}
 
 /**
  * Genera el prompt para crear un script bash (macOS/Linux)
  */
 function generateBashPrompt(plantUMLCode) {
   return `
-**Rol:** Eres un desarrollador backend senior experto en NestJS, arquitectura de software y un maestro en shell scripting (bash).
-**Tarea:** A partir del siguiente diagrama de clases de PlantUML, genera un **único script de bash (.sh)** que cree un proyecto NestJS completo, incluyendo toda la estructura de carpetas y archivos con su contenido.
+**Rol:** Eres un desarrollador backend senior experto en NestJS, Prisma ORM, arquitectura de software y un maestro en shell scripting (bash).
+**Tarea:** A partir del siguiente diagrama de clases de PlantUML, genera un **único script de bash (.sh)** que cree un proyecto NestJS completo con Prisma ORM configurado, incluyendo toda la estructura de carpetas y archivos con su contenido, permitiendo persistencia inmediata en cada clase.
 **Requisitos del Script Bash:**
 0.  **Configurar PATH y verificar npm/nest (CRÍTICO):** El script DEBE empezar configurando el PATH para incluir las rutas comunes de Node.js y npm. Luego verificar e instalar NestJS CLI si es necesario. Usa algo como:
     \`\`\`bash
@@ -54,12 +75,150 @@ function generateBashPrompt(plantUMLCode) {
     \`\`\`
 1.  **Crear Proyecto:** Después de asegurar que NestJS CLI está instalado, el script debe crear un nuevo proyecto NestJS (ej: \`nest new mi-proyecto-backend --skip-git --package-manager npm\`).
 2.  **Navegar al Proyecto:** Debe incluir el comando \`cd mi-proyecto-backend\`.
-3.  **Generar Módulos (CLI):** Para cada entidad principal del diagrama, debe usar los comandos de NestJS CLI para generar el módulo, controlador y servicio (ej: \`nest g module modules/usuarios\`, \`nest g controller modules/usuarios --no-spec\`, \`nest g service modules/usuarios --no-spec\`).
-4.  **Escribir Archivos (DTOs y Lógica):** El script debe usar comandos \`cat <<'EOF' > [RUTA_DEL_ARCHIVO]\` para crear o **sobrescribir** los archivos con el contenido completo.
-    * **DTOs:** Debe crear las carpetas \`dto\` (ej: \`mkdir -p src/modules/usuarios/dto\`) y escribir los archivos \`create-usuario.dto.ts\` y \`update-usuario.dto.ts\` con las propiedades del diagrama.
-    * **Servicios:** Debe **sobrescribir** el archivo \`*.service.ts\` generado por el CLI con la lógica CRUD completa (create, findAll, findOne, update, remove) que use los DTOs.
-    * **Controladores:** Debe **sobrescribir** el archivo \`*.controller.ts\` con todos los endpoints RESTful (@Post, @Get, @Patch, @Delete) que se conecten al servicio.
-    * **Módulos:** Debe **sobrescribir** el archivo \`*.module.ts\` para asegurarse de que el controlador y el servicio estén correctamente importados.
+3.  **Instalar Prisma CLI y dependencias:** El script DEBE instalar Prisma CLI y las dependencias necesarias:
+    \`\`\`bash
+    npm install prisma @prisma/client
+    npm install -D @types/node
+    \`\`\`
+4.  **Inicializar Prisma y configurar .env (CRÍTICO - ORDEN IMPORTANTE):** El script debe:
+    a) Inicializar Prisma con SQLite:
+    \`\`\`bash
+    npx prisma init --datasource-provider sqlite
+    \`\`\`
+    b) **INMEDIATAMENTE DESPUÉS** (sin ejecutar ningún otro comando), configurar el archivo \`.env\` con \`DATABASE_URL\` para SQLite:
+    \`\`\`bash
+    # Asegurar que .env existe y tiene DATABASE_URL para SQLite
+    # Esto DEBE hacerse inmediatamente después de prisma init y ANTES de cualquier otro comando de Prisma
+    if [ ! -f .env ]; then
+      echo 'DATABASE_URL="file:./dev.db"' > .env
+    else
+      # Si .env existe pero no tiene DATABASE_URL, agregarla
+      if ! grep -q "DATABASE_URL" .env; then
+        echo 'DATABASE_URL="file:./dev.db"' >> .env
+      else
+        # Si existe pero está configurada para otra BD, reemplazarla
+        sed -i.bak 's|^DATABASE_URL=.*|DATABASE_URL="file:./dev.db"|' .env
+      fi
+    fi
+    \`\`\`
+    c) **CRÍTICO - Configurar prisma.config.ts:** Si Prisma genera un archivo \`prisma.config.ts\`, el script DEBE asegurarse de que importe \`dotenv/config\` para cargar las variables de entorno del archivo \`.env\`. El script debe verificar si existe \`prisma.config.ts\` y, si existe, asegurarse de que tenga esta línea al inicio. **IMPORTANTE:** NO usar \`sed\` con comando \`i\` ya que falla en macOS. En su lugar, usar un método más robusto:
+    \`\`\`bash
+    # Verificar y configurar prisma.config.ts para cargar variables de entorno
+    if [ -f prisma.config.ts ]; then
+      # Verificar si ya tiene la importación de dotenv
+      if ! grep -q 'import "dotenv/config"' prisma.config.ts; then
+        # Agregar la importación al inicio del archivo usando un método compatible con macOS y Linux
+        # Crear un archivo temporal con la importación y luego el contenido original
+        echo 'import "dotenv/config";' > prisma.config.ts.tmp
+        cat prisma.config.ts >> prisma.config.ts.tmp
+        mv prisma.config.ts.tmp prisma.config.ts
+      fi
+    fi
+    \`\`\`
+    **CRÍTICO:** El orden debe ser: 1) \`prisma init\`, 2) configurar \`.env\`, 3) configurar \`prisma.config.ts\` (si existe), 4) configurar \`schema.prisma\`, 5) ejecutar comandos de Prisma (\`prisma migrate\`, \`prisma generate\`). NO ejecutar ningún comando de Prisma antes de tener el \`.env\` configurado y \`prisma.config.ts\` (si existe) configurado para cargar dotenv.
+6.  **Configurar Prisma Schema:** El script debe crear/sobrescribir el archivo \`prisma/schema.prisma\` con:
+    - Configuración del generador de cliente Prisma
+    - Configuración del datasource (SQLite por defecto, pero preparado para PostgreSQL/MySQL)
+    - Modelos Prisma basados en TODAS las entidades del diagrama PlantUML, incluyendo:
+      * Campos correspondientes a las propiedades de cada clase
+      * Relaciones entre entidades (si existen en el diagrama)
+      * Tipos de datos apropiados (String, Int, DateTime, Boolean, etc.)
+      * Campos @id y @default para IDs auto-generados
+      * Campos @createdAt y @updatedAt cuando sea apropiado
+    Ejemplo de modelo:
+    \`\`\`prisma
+    model Usuario {
+      id        Int      @id @default(autoincrement())
+      nombre    String
+      email     String   @unique
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+    }
+    \`\`\`
+7.  **Generar Prisma Client y Migraciones:** Después de configurar el schema, el script debe VERIFICAR que el archivo \`.env\` existe y tiene \`DATABASE_URL\`, y que \`prisma.config.ts\` (si existe) está configurado correctamente antes de ejecutar comandos de Prisma:
+    \`\`\`bash
+    # Verificar que .env existe y tiene DATABASE_URL
+    if [ ! -f .env ] || ! grep -q "DATABASE_URL" .env; then
+      echo "ERROR: .env no está configurado correctamente. Configurando..."
+      echo 'DATABASE_URL="file:./dev.db"' > .env
+    fi
+    
+    # Verificar que prisma.config.ts (si existe) tiene la importación de dotenv
+    if [ -f prisma.config.ts ] && ! grep -q 'import "dotenv/config"' prisma.config.ts; then
+      echo "Configurando prisma.config.ts para cargar variables de entorno..."
+      # Usar método compatible con macOS y Linux (no usar sed con comando i)
+      echo 'import "dotenv/config";' > prisma.config.ts.tmp
+      cat prisma.config.ts >> prisma.config.ts.tmp
+      mv prisma.config.ts.tmp prisma.config.ts
+    fi
+    
+    # Instalar dotenv si no está instalado (necesario para prisma.config.ts)
+    if ! grep -q '"dotenv"' package.json; then
+      npm install dotenv
+    fi
+    
+    # Ahora ejecutar comandos de Prisma
+    npx prisma migrate dev --name init
+    npx prisma generate
+    \`\`\`
+8.  **Crear PrismaService:** El script debe crear un servicio Prisma reutilizable en \`src/prisma/prisma.service.ts\`:
+    \`\`\`typescript
+    import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+    import { PrismaClient } from '@prisma/client';
+
+    @Injectable()
+    export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+      async onModuleInit() {
+        await this.$connect();
+      }
+
+      async onModuleDestroy() {
+        await this.$disconnect();
+      }
+    }
+    \`\`\`
+9.  **Crear PrismaModule:** El script debe crear un módulo Prisma en \`src/prisma/prisma.module.ts\` que exporte PrismaService como provider global:
+    \`\`\`typescript
+    import { Module, Global } from '@nestjs/common';
+    import { PrismaService } from './prisma.service';
+
+    @Global()
+    @Module({
+      providers: [PrismaService],
+      exports: [PrismaService],
+    })
+    export class PrismaModule {}
+    \`\`\`
+10. **Importar PrismaModule en AppModule:** El script debe actualizar \`src/app.module.ts\` para importar PrismaModule. **IMPORTANTE:** NO usar \`sed\` para modificar este archivo, ya que puede fallar con caracteres especiales. En su lugar, usar \`cat <<'EOF' > src/app.module.ts\` para reescribir el archivo completo con el contenido actualizado que incluya la importación de PrismaModule en el array de imports del decorador @Module.
+11. **Generar Módulos (CLI):** Para cada entidad principal del diagrama, debe usar los comandos de NestJS CLI para generar el módulo, controlador y servicio (ej: \`nest g module modules/usuarios\`, \`nest g controller modules/usuarios --no-spec\`, \`nest g service modules/usuarios --no-spec\`).
+12. **Escribir Archivos (DTOs y Lógica con Prisma):** El script debe usar comandos \`cat <<'EOF' > [RUTA_DEL_ARCHIVO]\` para crear o **sobrescribir** los archivos con el contenido completo.
+    * **DTOs:** Debe crear las carpetas \`dto\` (ej: \`mkdir -p src/modules/usuarios/dto\`) y escribir los archivos \`create-usuario.dto.ts\` y \`update-usuario.dto.ts\` con las propiedades del diagrama usando class-validator decorators (@IsString, @IsEmail, @IsOptional, etc.).
+    * **Servicios:** Debe **sobrescribir** el archivo \`*.service.ts\` generado por el CLI con la lógica CRUD completa usando PrismaService:
+      - Inyectar PrismaService en el constructor
+      - Implementar create() usando \`this.prisma.[modelo].create({ data: createDto })\`
+      - Implementar findAll() usando \`this.prisma.[modelo].findMany()\`
+      - Implementar findOne() usando \`this.prisma.[modelo].findUnique({ where: { id } })\` y lanzar NotFoundException si no existe: \`if (!item) throw new NotFoundException(\`[Modelo] with ID \${id} not found\`);\`
+      - Implementar update() usando \`this.prisma.[modelo].update({ where: { id }, data: updateDto })\` con manejo de errores usando try-catch
+      - Implementar remove() usando \`this.prisma.[modelo].delete({ where: { id } })\` con manejo de errores usando try-catch
+      - **CRÍTICO - Template Literals:** Al escribir código TypeScript dentro de \`cat <<'EOF'\`, los template literals (backticks \`\`\` y \${expresion}) deben escribirse LITERALMENTE sin escapar. Ejemplo CORRECTO: \`throw new NotFoundException(\`Item with ID \${id} not found\`);\` - Ejemplo INCORRECTO: \`throw new NotFoundException(\\\`Item with ID \\\${id} not found\\\`);\` - Los backticks y \${} NO deben tener barras invertidas de escape.
+      - Manejar errores apropiadamente: importar \`NotFoundException\` de \`@nestjs/common\` y usar try-catch para capturar \`PrismaClientKnownRequestError\` de \`@prisma/client/runtime/library\`
+    * **Controladores:** Debe **sobrescribir** el archivo \`*.controller.ts\` con todos los endpoints RESTful (@Post, @Get, @Patch, @Delete) que se conecten al servicio, usando ValidationPipe para validar DTOs.
+    * **Módulos:** Debe **sobrescribir** el archivo \`*.module.ts\` para asegurarse de que el controlador y el servicio estén correctamente importados. NO necesita importar PrismaModule porque es global.
+13. **Configurar ValidationPipe global:** El script debe actualizar \`src/main.ts\` para incluir ValidationPipe globalmente:
+    \`\`\`typescript
+    import { ValidationPipe } from '@nestjs/common';
+    app.useGlobalPipes(new ValidationPipe());
+    \`\`\`
+14. **Instalar class-validator y class-transformer:** El script debe instalar las dependencias necesarias para validación:
+    \`\`\`bash
+    npm install class-validator class-transformer
+    \`\`\`
+**IMPORTANTE:** 
+- Cada servicio DEBE usar PrismaService para persistencia inmediata en la base de datos
+- NO usar arrays en memoria ni datos mock
+- Todos los modelos del diagrama PlantUML DEBEN estar en el schema.prisma
+- Las relaciones entre entidades deben reflejarse en el schema.prisma
+- El proyecto generado debe estar listo para usar inmediatamente con persistencia real
 **Formato de Salida:**
 Responde **únicamente** con el script de bash, comenzando con \`#!/bin/bash\` y nada más. No incluyas explicaciones, solo el código del script.
 **Diagrama PlantUML de entrada:**
@@ -74,8 +233,8 @@ ${plantUMLCode}
  */
 function generateBatchPrompt(plantUMLCode) {
   return `
-**Rol:** Eres un desarrollador backend senior experto en NestJS, arquitectura de software y un maestro en scripting de Windows (batch/cmd).
-**Tarea:** A partir del siguiente diagrama de clases de PlantUML, genera un **único script de batch (.bat)** que cree un proyecto NestJS completo, incluyendo toda la estructura de carpetas y archivos con su contenido.
+**Rol:** Eres un desarrollador backend senior experto en NestJS, Prisma ORM, arquitectura de software y un maestro en scripting de Windows (batch/cmd).
+**Tarea:** A partir del siguiente diagrama de clases de PlantUML, genera un **único script de batch (.bat)** que cree un proyecto NestJS completo con Prisma ORM configurado, incluyendo toda la estructura de carpetas y archivos con su contenido, permitiendo persistencia inmediata en cada clase.
 **Requisitos del Script Batch:**
 0.  **Configurar PATH y verificar npm/nest (CRÍTICO):** El script DEBE empezar configurando el PATH para incluir las rutas comunes de Node.js y npm en Windows. Luego verificar e instalar NestJS CLI si es necesario. Usa algo como:
     \`\`\`batch
@@ -103,12 +262,156 @@ function generateBatchPrompt(plantUMLCode) {
     \`\`\`
 1.  **Crear Proyecto:** Después de asegurar que NestJS CLI está instalado, el script debe crear un nuevo proyecto NestJS (ej: \`nest new mi-proyecto-backend --skip-git --package-manager npm\`).
 2.  **Navegar al Proyecto:** Debe incluir el comando \`cd mi-proyecto-backend\`.
-3.  **Generar Módulos (CLI):** Para cada entidad principal del diagrama, debe usar los comandos de NestJS CLI para generar el módulo, controlador y servicio (ej: \`nest g module modules/usuarios\`, \`nest g controller modules/usuarios --no-spec\`, \`nest g service modules/usuarios --no-spec\`).
-4.  **Escribir Archivos (DTOs y Lógica):** El script debe usar comandos de Windows para crear o **sobrescribir** los archivos con el contenido completo. Usa bloques de texto con redirección (ej: \`(echo contenido) > archivo.ts\` o bloques múltiples con \`>>\`).
-    * **DTOs:** Debe crear las carpetas \`dto\` (ej: \`if not exist "src\\modules\\usuarios\\dto" mkdir "src\\modules\\usuarios\\dto"\`) y escribir los archivos \`create-usuario.dto.ts\` y \`update-usuario.dto.ts\` con las propiedades del diagrama.
-    * **Servicios:** Debe **sobrescribir** el archivo \`*.service.ts\` generado por el CLI con la lógica CRUD completa (create, findAll, findOne, update, remove) que use los DTOs.
-    * **Controladores:** Debe **sobrescribir** el archivo \`*.controller.ts\` con todos los endpoints RESTful (@Post, @Get, @Patch, @Delete) que se conecten al servicio.
-    * **Módulos:** Debe **sobrescribir** el archivo \`*.module.ts\` para asegurarse de que el controlador y el servicio estén correctamente importados.
+3.  **Instalar Prisma CLI y dependencias:** El script DEBE instalar Prisma CLI y las dependencias necesarias:
+    \`\`\`batch
+    call npm install prisma @prisma/client
+    call npm install -D @types/node
+    \`\`\`
+4.  **Inicializar Prisma y configurar .env (CRÍTICO - ORDEN IMPORTANTE):** El script debe:
+    a) Inicializar Prisma con SQLite:
+    \`\`\`batch
+    call npx prisma init --datasource-provider sqlite
+    \`\`\`
+    b) **INMEDIATAMENTE DESPUÉS** (sin ejecutar ningún otro comando), configurar el archivo \`.env\` con \`DATABASE_URL\` para SQLite:
+    \`\`\`batch
+    REM Asegurar que .env existe y tiene DATABASE_URL para SQLite
+    if not exist .env (
+      echo DATABASE_URL="file:./dev.db" > .env
+    ) else (
+      REM Verificar si DATABASE_URL existe en .env
+      findstr /C:"DATABASE_URL" .env >nul
+      if errorlevel 1 (
+        REM No existe, agregarla
+        echo DATABASE_URL="file:./dev.db" >> .env
+      ) else (
+        REM Existe, reemplazarla
+        powershell -Command "(Get-Content .env) -replace '^DATABASE_URL=.*', 'DATABASE_URL=\"file:./dev.db\"' | Set-Content .env"
+      )
+    )
+    \`\`\`
+    c) **CRÍTICO - Configurar prisma.config.ts:** Si Prisma genera un archivo \`prisma.config.ts\`, el script DEBE asegurarse de que importe \`dotenv/config\` para cargar las variables de entorno del archivo \`.env\`. El script debe verificar si existe \`prisma.config.ts\` y, si existe, asegurarse de que tenga esta línea al inicio:
+    \`\`\`batch
+    REM Verificar y configurar prisma.config.ts para cargar variables de entorno
+    if exist prisma.config.ts (
+      REM Verificar si ya tiene la importación de dotenv
+      findstr /C:"import \"dotenv/config\"" prisma.config.ts >nul
+      if errorlevel 1 (
+        REM No tiene la importación, agregarla al inicio usando PowerShell
+        powershell -Command "$content = Get-Content prisma.config.ts; 'import \"dotenv/config\";' + [Environment]::NewLine + ($content -join [Environment]::NewLine) | Set-Content prisma.config.ts"
+      )
+    )
+    \`\`\`
+    **CRÍTICO:** El orden debe ser: 1) \`prisma init\`, 2) configurar \`.env\`, 3) configurar \`prisma.config.ts\` (si existe), 4) configurar \`schema.prisma\`, 5) ejecutar comandos de Prisma (\`prisma migrate\`, \`prisma generate\`). NO ejecutar ningún comando de Prisma antes de tener el \`.env\` configurado y \`prisma.config.ts\` (si existe) configurado para cargar dotenv.
+6.  **Configurar Prisma Schema:** El script debe crear/sobrescribir el archivo \`prisma\\schema.prisma\` con:
+    - Configuración del generador de cliente Prisma
+    - Configuración del datasource (SQLite por defecto, pero preparado para PostgreSQL/MySQL)
+    - Modelos Prisma basados en TODAS las entidades del diagrama PlantUML, incluyendo:
+      * Campos correspondientes a las propiedades de cada clase
+      * Relaciones entre entidades (si existen en el diagrama)
+      * Tipos de datos apropiados (String, Int, DateTime, Boolean, etc.)
+      * Campos @id y @default para IDs auto-generados
+      * Campos @createdAt y @updatedAt cuando sea apropiado
+    Ejemplo de modelo:
+    \`\`\`prisma
+    model Usuario {
+      id        Int      @id @default(autoincrement())
+      nombre    String
+      email     String   @unique
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+    }
+    \`\`\`
+7.  **Generar Prisma Client y Migraciones:** Después de configurar el schema, el script debe VERIFICAR que el archivo \`.env\` existe y tiene \`DATABASE_URL\`, y que \`prisma.config.ts\` (si existe) está configurado correctamente antes de ejecutar comandos de Prisma:
+    \`\`\`batch
+    REM Verificar que .env existe y tiene DATABASE_URL
+    if not exist .env (
+      echo ERROR: .env no está configurado correctamente. Configurando...
+      echo DATABASE_URL="file:./dev.db" > .env
+    ) else (
+      findstr /C:"DATABASE_URL" .env >nul
+      if errorlevel 1 (
+        echo ERROR: .env no tiene DATABASE_URL. Configurando...
+        echo DATABASE_URL="file:./dev.db" >> .env
+      )
+    )
+    
+    REM Verificar que prisma.config.ts (si existe) tiene la importación de dotenv
+    if exist prisma.config.ts (
+      findstr /C:"import \"dotenv/config\"" prisma.config.ts >nul
+      if errorlevel 1 (
+        echo Configurando prisma.config.ts para cargar variables de entorno...
+        powershell -Command "$content = Get-Content prisma.config.ts; 'import \"dotenv/config\";' + [Environment]::NewLine + ($content -join [Environment]::NewLine) | Set-Content prisma.config.ts"
+      )
+    )
+    
+    REM Instalar dotenv si no está instalado (necesario para prisma.config.ts)
+    findstr /C:"\"dotenv\"" package.json >nul
+    if errorlevel 1 (
+      call npm install dotenv
+    )
+    
+    REM Ahora ejecutar comandos de Prisma
+    call npx prisma migrate dev --name init
+    call npx prisma generate
+    \`\`\`
+8.  **Crear PrismaService:** El script debe crear un servicio Prisma reutilizable en \`src\\prisma\\prisma.service.ts\`:
+    \`\`\`typescript
+    import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+    import { PrismaClient } from '@prisma/client';
+
+    @Injectable()
+    export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+      async onModuleInit() {
+        await this.$connect();
+      }
+
+      async onModuleDestroy() {
+        await this.$disconnect();
+      }
+    }
+    \`\`\`
+9.  **Crear PrismaModule:** El script debe crear un módulo Prisma en \`src\\prisma\\prisma.module.ts\` que exporte PrismaService como provider global:
+    \`\`\`typescript
+    import { Module, Global } from '@nestjs/common';
+    import { PrismaService } from './prisma.service';
+
+    @Global()
+    @Module({
+      providers: [PrismaService],
+      exports: [PrismaService],
+    })
+    export class PrismaModule {}
+    \`\`\`
+10. **Importar PrismaModule en AppModule:** El script debe actualizar \`src\\app.module.ts\` para importar PrismaModule. **IMPORTANTE:** NO usar comandos de edición de texto como \`sed\` o \`findstr\` para modificar este archivo, ya que pueden fallar con caracteres especiales en TypeScript. En su lugar, usar bloques de texto con redirección para reescribir el archivo completo con el contenido actualizado que incluya la importación de PrismaModule en el array de imports del decorador @Module.
+11. **Generar Módulos (CLI):** Para cada entidad principal del diagrama, debe usar los comandos de NestJS CLI para generar el módulo, controlador y servicio (ej: \`nest g module modules/usuarios\`, \`nest g controller modules/usuarios --no-spec\`, \`nest g service modules/usuarios --no-spec\`).
+12. **Escribir Archivos (DTOs y Lógica con Prisma):** El script debe usar comandos de Windows para crear o **sobrescribir** los archivos con el contenido completo. Usa bloques de texto con redirección (ej: \`(echo contenido) > archivo.ts\` o bloques múltiples con \`>>\`).
+    * **DTOs:** Debe crear las carpetas \`dto\` (ej: \`if not exist "src\\modules\\usuarios\\dto" mkdir "src\\modules\\usuarios\\dto"\`) y escribir los archivos \`create-usuario.dto.ts\` y \`update-usuario.dto.ts\` con las propiedades del diagrama usando class-validator decorators (@IsString, @IsEmail, @IsOptional, etc.).
+    * **Servicios:** Debe **sobrescribir** el archivo \`*.service.ts\` generado por el CLI con la lógica CRUD completa usando PrismaService:
+      - Inyectar PrismaService en el constructor
+      - Implementar create() usando \`this.prisma.[modelo].create({ data: createDto })\`
+      - Implementar findAll() usando \`this.prisma.[modelo].findMany()\`
+      - Implementar findOne() usando \`this.prisma.[modelo].findUnique({ where: { id } })\` y lanzar NotFoundException si no existe: \`if (!item) throw new NotFoundException(\`[Modelo] with ID \${id} not found\`);\`
+      - Implementar update() usando \`this.prisma.[modelo].update({ where: { id }, data: updateDto })\` con manejo de errores usando try-catch
+      - Implementar remove() usando \`this.prisma.[modelo].delete({ where: { id } })\` con manejo de errores usando try-catch
+      - **CRÍTICO - Template Literals:** Al escribir código TypeScript dentro de bloques de texto en batch, los template literals (backticks \`\`\` y \${expresion}) deben escribirse LITERALMENTE sin escapar. Ejemplo CORRECTO: \`throw new NotFoundException(\`Item with ID \${id} not found\`);\` - Ejemplo INCORRECTO: \`throw new NotFoundException(\\\`Item with ID \\\${id} not found\\\`);\` - Los backticks y \${} NO deben tener barras invertidas de escape.
+      - Manejar errores apropiadamente: importar \`NotFoundException\` de \`@nestjs/common\` y usar try-catch para capturar \`PrismaClientKnownRequestError\` de \`@prisma/client/runtime/library\`
+    * **Controladores:** Debe **sobrescribir** el archivo \`*.controller.ts\` con todos los endpoints RESTful (@Post, @Get, @Patch, @Delete) que se conecten al servicio, usando ValidationPipe para validar DTOs.
+    * **Módulos:** Debe **sobrescribir** el archivo \`*.module.ts\` para asegurarse de que el controlador y el servicio estén correctamente importados. NO necesita importar PrismaModule porque es global.
+13. **Configurar ValidationPipe global:** El script debe actualizar \`src\\main.ts\` para incluir ValidationPipe globalmente:
+    \`\`\`typescript
+    import { ValidationPipe } from '@nestjs/common';
+    app.useGlobalPipes(new ValidationPipe());
+    \`\`\`
+14. **Instalar class-validator y class-transformer:** El script debe instalar las dependencias necesarias para validación:
+    \`\`\`batch
+    call npm install class-validator class-transformer
+    \`\`\`
+**IMPORTANTE:** 
+- Cada servicio DEBE usar PrismaService para persistencia inmediata en la base de datos
+- NO usar arrays en memoria ni datos mock
+- Todos los modelos del diagrama PlantUML DEBEN estar en el schema.prisma
+- Las relaciones entre entidades deben reflejarse en el schema.prisma
+- El proyecto generado debe estar listo para usar inmediatamente con persistencia real
 **Notas importantes para Windows:**
 - Usa rutas con barras invertidas (\\) o barras normales (/) según sea necesario
 - Usa \`call\` antes de comandos npm/nest para asegurar que el script continúe después de ejecutarlos
@@ -176,7 +479,7 @@ async function run(plantUMLCode, outputDir = null) {
     logs.push('Llamando a la API de Gemini...');
     
     // 3. Llamar a Gemini API
-    const response = await fetch(`${URL}?key=${API_KEY}`, {
+    const response = await fetch(`${URL}?key=${getApiKey()}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

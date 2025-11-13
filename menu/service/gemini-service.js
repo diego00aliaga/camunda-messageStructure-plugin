@@ -1,23 +1,45 @@
-/* * 🚨 ADVERTENCIA DE SEGURIDAD 🚨
- * Esta API key ("AIzaSy...") está expuesta. 
- * Bórrala y crea una nueva en Google AI Studio.
- */
-
 // --- Configuración Exacta del CURL ---
 
 // Importar el logger
 const logger = require('../log/logger');
+const path = require('path');
 
 // 1. URL (tal como en tu curl)
 const URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-// 2. La API Key (tal como en tu header 'X-goog-api-key')
-const API_KEY = "AIzaSyD7pA4UTuDDN5Y67CvtRsx8ZHr545cA4Fg";
+// 2. La API Key - Se obtiene de variable de entorno por seguridad
+// Configura la variable de entorno GEMINI_API_KEY antes de ejecutar el plugin
+// Ejemplo: export GEMINI_API_KEY="tu-api-key-aqui"
+function getApiKey() {
+  const configPath = path.resolve(__dirname, '../../config.json');
+  let config;
+
+  try {
+    config = require(configPath);
+  } catch (error) {
+    const errorMsg = `Error al cargar config.json. Asegúrate de que el archivo existe en la raíz del plugin y tiene el formato correcto.\n\nRuta esperada: ${configPath}\n\nError: ${error.message}`;
+    logger.log(errorMsg, 'ERROR');
+    throw new Error(errorMsg);
+  }
+
+  const apiKey = config.GEMINI_API_KEY;
+  if (!apiKey) {
+    const errorMsg = 'GEMINI_API_KEY no está configurada en config.json. Por favor, asegúrate de que el archivo config.json contiene la clave GEMINI_API_KEY con tu API key de Google AI Studio.\n\nRuta del archivo: ' + configPath;
+    logger.log(errorMsg, 'ERROR');
+    throw new Error(errorMsg);
+  }
+  return apiKey;
+}
 
 async function run(dataFieldsString = null) {
   const logs = [];
   
   try {
+    // Validar API key al inicio de la ejecución
+    const API_KEY = getApiKey();
+    logger.log('API Key validada correctamente');
+    logs.push('API Key validada');
+
     logger.log('Gemini Service (usando fetch) ejecutado correctamente');
     logger.log(`Llamando a: ${URL}`);
     logs.push('Gemini Service iniciado');
@@ -128,6 +150,10 @@ async function run(dataFieldsString = null) {
 
     // 5. Manejo de errores
     if (!response.ok) {
+      if (response.status === 429) {
+        logger.log("⏳ Demasiadas peticiones. Has superado el límite de velocidad de la API gratuita (15 peticiones/min).", 'WARN');
+        throw new Error("Has superado el límite de velocidad de la API gratuita (15 peticiones/min). Por favor, espera un minuto e inténtalo de nuevo.");
+      }
       const errorData = await response.json();
       const errorMessage = `Error ${response.status}: ${errorData.error?.message || 'Error desconocido'}`;
       logger.log(errorMessage, 'ERROR');
@@ -157,10 +183,29 @@ async function run(dataFieldsString = null) {
       }
     };
   } catch (error) {
-    const errorMessage = `Error al ejecutar Gemini con fetch: ${error.message}`;
+    // Mejorar el mensaje de error con más detalles
+    let errorMessage = `Error al ejecutar Gemini: ${error.message}`;
+    
+    // Agregar stack trace si está disponible (solo en desarrollo)
+    if (error.stack && process.env.NODE_ENV === 'development') {
+      errorMessage += `\n\nStack trace:\n${error.stack}`;
+    }
+    
+    // Agregar información adicional sobre el error
+    if (error.message.includes('GEMINI_API_KEY')) {
+      errorMessage += '\n\n💡 Tip: Asegúrate de configurar la variable de entorno antes de ejecutar Camunda Modeler.';
+    } else if (error.message.includes('fetch')) {
+      errorMessage += '\n\n💡 Tip: Verifica tu conexión a internet y que la API key sea válida.';
+    }
+    
     logger.log(errorMessage, 'ERROR');
+    logger.log(`Error completo: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`, 'ERROR');
     logs.push(`ERROR: ${errorMessage}`);
-    throw error;
+    
+    // Crear un nuevo error con el mensaje mejorado
+    const enhancedError = new Error(errorMessage);
+    enhancedError.originalError = error;
+    throw enhancedError;
   }
 }
 

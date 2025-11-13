@@ -79,7 +79,7 @@ module.exports = function (electronApp, menuState) {
               'Generando Diagrama UML',
               'Procesando con Gemini AI...',
               'Por favor espera mientras se genera el diagrama PlantUML a partir de tu diagrama BPMN.\n\nEsto puede tardar unos segundos.\n\nNo cierres esta ventana.',
-              ['OK']
+              [] // Se quita el botón 'OK' para que sea no interactivo
             ).catch(function(err) {
               // Ignorar errores al mostrar el diálogo de progreso
               logger.log(`Error mostrando diálogo de progreso: ${err.message}`, 'WARN');
@@ -156,7 +156,24 @@ module.exports = function (electronApp, menuState) {
           }
         })
         .catch(function(error) {
+          // Log detallado del error
+          const errorDetails = {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            originalError: error.originalError
+          };
           logger.log(`Error al ejecutar Gemini: ${error.message}`, 'ERROR');
+          logger.log(`Detalles del error: ${JSON.stringify(errorDetails, null, 2)}`, 'ERROR');
+          logger.log(`Archivo de log disponible en: ${logger.getLogPath()}`, 'INFO');
+          
+          // Construir mensaje de error más detallado
+          let errorMessage = error.message || 'Error desconocido';
+          
+          // Agregar información sobre el log si el error es complejo
+          if (error.stack || error.originalError) {
+            errorMessage += `\n\n📋 Para más detalles, revisa el archivo de log:\n${logger.getLogPath()}`;
+          }
           
           // Mostrar error al usuario usando diálogo HTML (cerrando el diálogo de progreso)
           if (electronApp.mainWindow && electronApp.mainWindow.webContents) {
@@ -164,10 +181,47 @@ module.exports = function (electronApp, menuState) {
               electronApp.mainWindow.webContents,
               'Error',
               'Error al ejecutar Gemini',
-              error.message || 'Error desconocido',
-              ['OK'],
+              errorMessage,
+              ['OK', 'Ver Log'],
               true  // closeExisting = true para cerrar el diálogo de progreso
-            ).catch(function(err) {
+            ).then(function(buttonIndex) {
+              // Si el usuario presionó "Ver Log" (índice 1)
+              if (buttonIndex === 1) {
+                // Leer y mostrar el contenido del log
+                try {
+                  const fs = require('fs');
+                  const logPath = logger.getLogPath();
+                  let logContent = 'No se pudo leer el archivo de log.';
+                  
+                  if (fs.existsSync(logPath)) {
+                    const logs = fs.readFileSync(logPath, 'utf8');
+                    // Mostrar las últimas 50 líneas del log
+                    const logLines = logs.split('\n');
+                    const recentLogs = logLines.slice(-50).join('\n');
+                    logContent = recentLogs || 'El archivo de log está vacío.';
+                  }
+                  
+                  htmlDialog.showInfoDialog(
+                    electronApp.mainWindow.webContents,
+                    'Log del Plugin',
+                    'Últimas entradas del log:',
+                    `Ruta del log: ${logPath}\n\n--- Últimas 50 líneas ---\n\n${logContent}`,
+                    ['OK']
+                  ).catch(function(dialogErr) {
+                    logger.log(`Error mostrando diálogo de log: ${dialogErr.message}`, 'ERROR');
+                  });
+                } catch (logErr) {
+                  logger.log(`Error leyendo log: ${logErr.message}`, 'ERROR');
+                  htmlDialog.showErrorDialog(
+                    electronApp.mainWindow.webContents,
+                    'Error',
+                    'Error al leer el log',
+                    `No se pudo leer el archivo de log: ${logErr.message}\n\nRuta: ${logger.getLogPath()}`,
+                    ['OK']
+                  ).catch(() => {});
+                }
+              }
+            }).catch(function(err) {
               logger.log(`Error mostrando diálogo de error: ${err.message}`, 'ERROR');
             });
           }
@@ -237,7 +291,7 @@ function generateNestJSProject(plantUMLCode, electronApp, outputDir = null) {
     'Generando Proyecto NestJS',
     'Por favor espera...',
     'Esto puede tardar varios minutos. El proceso incluye:\n1. Generación del script bash\n2. Creación del proyecto NestJS\n3. Generación de módulos, controladores y servicios\n\nNo cierres esta ventana.',
-    ['OK']
+    []
   ).catch(() => {
     // Ignorar errores al mostrar el diálogo de progreso
   });

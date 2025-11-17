@@ -116,7 +116,7 @@ module.exports = function (electronApp, menuState) {
               'Diagrama UML Generado',
               'Diagrama PlantUML generado exitosamente',
               detailWithMetadata,
-              logs.length > 0 ? ['Generar Código', 'Ver Logs'] : ['Generar Código'],
+              logs.length > 0 ? [ 'Generar Código', 'Ver Logs'] : ['Generar Código'],
               true  // closeExisting = true para cerrar el diálogo de progreso
             ).then(function(buttonIndex) {
               // Si el usuario presionó "Generar Código" (índice 0)

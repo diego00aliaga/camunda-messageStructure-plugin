@@ -293,11 +293,12 @@ function generateBashPrompt(plantUMLCode) {
     fi
     \`\`\`
 1.  **Crear Proyecto:** Después de asegurar que NestJS CLI está instalado, el script debe crear un nuevo proyecto NestJS (ej: \`nest new backend-scalfold --skip-git --package-manager npm\`).
-2.  **Navegar al Proyecto:** Debe incluir el comando \`cd backend-scalfold\`, \`npm i class-transformer\`, \`npm i @nestjs/mapped-types\`, \`npm i class-validator\`.
+2.  **Navegar al Proyecto:** Debe incluir el comando \`cd backend-scalfold\`, \`npm i class-transformer\`, \`npm i @nestjs/mapped-types\`, \`npm i class-validator\`, \`npm i npm i --save-dev @types/node\`.
 3.  **Instalar Prisma CLI y dependencias:** El script DEBE instalar Prisma CLI y las dependencias necesarias:
     \`\`\`bash
     npm install prisma @prisma/client
     npm install -D @types/node
+    npm i --save-dev @types/node
     \`\`\`
 4.  **Inicializar Prisma y configurar .env (CRÍTICO - ORDEN IMPORTANTE):** El script debe:
     a) Inicializar Prisma con SQLite:
@@ -409,7 +410,7 @@ function generateBashPrompt(plantUMLCode) {
     })
     export class PrismaModule {}
     \`\`\`
-10. **Importar PrismaModule en AppModule:** El script debe actualizar \`src/app.module.ts\` para importar PrismaModule. **IMPORTANTE:** NO usar \`sed\` para modificar este archivo, ya que puede fallar con caracteres especiales. En su lugar, usar \`cat <<'EOF' > src/app.module.ts\` para reescribir el archivo completo con el contenido actualizado que incluya la importación de PrismaModule en el array de imports del decorador @Module.
+10. **Importar PrismaModule en AppModule:** El script debe actualizar \`src/app.module.ts\` para importar PrismaModule. **IMPORTANTE:** NO usar \`sed\` para modificar este archivo, ya que puede fallar con caracteres especiales. En su lugar, usar \`cat <<'EOF' > src/app.module.ts\` para reescribir el archivo completo con el contenido actualizado que incluya la importación de PrismaModule en el array de imports del decorador @Module. Debes tener mucho cuidado en NO DUPLICAR LA IMPORTACIÓN DE LOS MODULOS YA EXISTENTES.
 11. **Generar Módulos (CLI):** Para cada entidad principal del diagrama, debe usar los comandos de NestJS CLI para generar el módulo, controlador y servicio (ej: \`nest g module modules/usuarios\`, \`nest g controller modules/usuarios --no-spec\`, \`nest g service modules/usuarios --no-spec\`).
 12. **Escribir Archivos (DTOs y Lógica con Prisma):** El script debe usar comandos \`cat <<'EOF' > [RUTA_DEL_ARCHIVO]\` para crear o **sobrescribir** los archivos con el contenido completo.
     * **DTOs:** Debe crear las carpetas \`dto\` (ej: \`mkdir -p src/modules/usuarios/dto\`) y escribir los archivos \`create-usuario.dto.ts\` y \`update-usuario.dto.ts\` con las propiedades del diagrama usando class-validator decorators (@IsString, @IsEmail, @IsOptional, etc.).

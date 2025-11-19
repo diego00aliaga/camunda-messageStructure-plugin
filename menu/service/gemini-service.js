@@ -33,6 +33,7 @@ function getApiKey() {
 
 async function run(dataFieldsString = null) {
   const logs = [];
+  const startTime = Date.now();
   
   try {
     // Validar API key al inicio de la ejecución
@@ -169,6 +170,7 @@ async function run(dataFieldsString = null) {
     logger.log('Primeros 200 caracteres de la respuesta: ' + text.substring(0, 200));
     logs.push(`XML : ${dataFieldsString}`);
     logs.push('Procesamiento completado exitosamente');
+    logs.push(`Tiempo total de ejecución: ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
     
     // Devolver la respuesta de Gemini con logs y metadata
     return {
@@ -201,6 +203,7 @@ async function run(dataFieldsString = null) {
     logger.log(errorMessage, 'ERROR');
     logger.log(`Error completo: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`, 'ERROR');
     logs.push(`ERROR: ${errorMessage}`);
+    logs.push(`Tiempo total de ejecución: ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
     
     // Crear un nuevo error con el mensaje mejorado
     const enhancedError = new Error(errorMessage);

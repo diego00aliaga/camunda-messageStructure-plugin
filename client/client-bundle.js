@@ -955,10 +955,10 @@ function Comments(eventBus, overlays, bpmnjs) {
                 }
               
               // Cargar el nombre de la estructura de mensaje
-              if (parsedData.messageStructure && parsedData.messageStructure.name) {
+              if (parsedData.messageStructure && parsedData.messageStructure.messageName) {
                 var $nameInput = $overlay.find('[data-message-structure-name]');
                 if ($nameInput.length > 0) {
-                  $nameInput.val(parsedData.messageStructure.name);
+                  $nameInput.val(parsedData.messageStructure.messageName);
                 }
               }
               

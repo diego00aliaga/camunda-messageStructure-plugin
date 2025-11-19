@@ -87,13 +87,19 @@ module.exports = function (electronApp, menuState) {
           }
           
           // Paso 3: Llamar a Gemini Service con los datos parseados
-          return geminiService.run(parsedData);
+          const geminiStartTime = Date.now();
+          return geminiService.run(parsedData).then(function(result) {
+            return {result, geminiStartTime};
+          });
         })
-        .then(function(result) {
+        .then(function(data) {
           // Manejar la respuesta que ahora es un objeto con {success, result, logs, metadata}
-          const responseText = typeof result === 'string' ? result : (result.result || JSON.stringify(result));
-          const logs = result.logs || [];
-          const metadata = result.metadata || {};
+          const responseText = typeof data.result === 'string' ? data.result : (data.result.result || JSON.stringify(data.result));
+          const logs = data.result.logs || [];
+          const geminiStartTime = ((Date.now() - data.geminiStartTime) / 1000).toFixed(2);
+          logs.push("SE DEMORÓ:", geminiStartTime);
+
+          const metadata = data.result.metadata || {};
           
           // Guardar el código PlantUML para usarlo después
           const plantUMLCode = responseText;

@@ -2,6 +2,7 @@
 var registerBpmnJSPlugin = require('camunda-modeler-plugin-helpers').registerBpmnJSPlugin;
 var plugin = require('bpmn-js-embedded-comments');
 
+
 registerBpmnJSPlugin(plugin);
 
 },{"bpmn-js-embedded-comments":2,"camunda-modeler-plugin-helpers":6}],2:[function(require,module,exports){
@@ -18,12 +19,18 @@ var util = require('./util');
 
 
 function Comments(eventBus, overlays, bpmnjs) {
-
+  // Exponer bpmnjs globalmente para acceso desde el menú
+  if (typeof window !== 'undefined' && bpmnjs) {
+    window.__pluginBpmnjs = bpmnjs;
+    console.log('✅ bpmnjs expuesto globalmente en window.__pluginBpmnjs');
+  }
+  
   // Global registry for aggregation templates
   var aggregationRegistry = {};
   
   // Function to register an aggregation template
   function registerAggregation(elementId, aggregationData) {
+
     var templateId = elementId + '_' + (aggregationData.name || 'Aggregation');
     aggregationRegistry[templateId] = {
       id: templateId,
@@ -350,9 +357,15 @@ function Comments(eventBus, overlays, bpmnjs) {
         
       } else {
         // DATA FIELD o REFERENCE FIELD: Los campos normales
+		var nameInput = $('<input type="text" class="fld" placeholder="Name" data-fld="name"/>').val(values && values.name || 'Name');
         var idInput = $('<select class="fld" data-fld="identifier"><option value="">Identifier</option><option value="true">true</option><option value="false">false</option></select>').val(values && values.identifier || '');
         var opInput = $('<select class="fld" data-fld="operation"><option value="">Operation</option><option value="input">input</option><option value="generation">generation</option><option value="derivation">derivation</option></select>').val(values && values.operation || '');
         var domInput = $('<select class="fld" data-fld="domain"><option value="">Domain</option><option value="text">text</option><option value="number">number</option><option value="money">money</option><option value="date">date</option></select>').val(values && values.domain || '');
+        // Campo solo para Reference Field: extended (true/false)
+        var extendedInput = null;
+        if (fieldType === 'reference') {
+          extendedInput = $('<select class="fld" data-fld="extended"><option value="">extended</option><option value="true">true</option><option value="false">false</option></select>').val(values && (values.extended === true || values.extended === false ? String(values.extended) : (values && values.extended || '')));
+        }
         var valueInput = $('<input type="text" class="fld" placeholder="Value" data-fld="value" style="display: none;"/>').val(values && values.value || '');
         var fieldDelBtn = $('<button type="button" class="btn-del" title="Remove">×</button>');
 
@@ -374,8 +387,12 @@ function Comments(eventBus, overlays, bpmnjs) {
         fieldDelBtn.on('click', function() { 
           row.remove(); 
         });
-
-        row.append(idInput, opInput, domInput, valueInput, fieldDelBtn);
+		console.log("Test", nameInput);
+        if (extendedInput) {
+          row.append(nameInput, idInput, opInput, domInput, extendedInput, valueInput, fieldDelBtn);
+        } else {
+          row.append(nameInput, idInput, opInput, domInput, valueInput, fieldDelBtn);
+        }
       }
       
       parentContainer.append(row);
@@ -650,13 +667,20 @@ function Comments(eventBus, overlays, bpmnjs) {
           } else {
             // DATA FIELD o REFERENCE FIELD
             var item = {
-              name: fieldType === 'reference' ? 'Reference Field' : 'Data Field',
-              type: fieldType === 'reference' ? 'Reference Field' : 'Data Field',
+				name: $row.find('[data-fld="name"]').val() || 'Iteration',
+				type: fieldType === 'reference' ? 'Reference Field' : 'Data Field',
               operation: $row.find('[data-fld="operation"]').val() || 'Operation',
-              domain: $row.find('[data-fld="domain"]').val() || 'Domain',
+              domain: $row.find('[data-fld="domain"]').val() || $row.find('[data-fld="name"]').val() || 'null',
               identifier: $row.find('[data-fld="identifier"]').val() || 'Identifier',
               children: []
             };
+            // Solo para Reference Field, incluir bandera extended si está definida
+            if (fieldType === 'reference') {
+              var extendedVal = $row.find('[data-fld="extended"]').val();
+              if (extendedVal === 'true' || extendedVal === 'false') {
+                item.extended = extendedVal === 'true';
+              }
+            }
             
             // Agregar value si existe
             var value = $row.find('[data-fld="value"]').val();
@@ -674,6 +698,13 @@ function Comments(eventBus, overlays, bpmnjs) {
       // Serializar todos los campos del nivel raíz
       var children = serializeFieldsRecursively($fields);
       
+      // Obtener el nombre de la estructura del campo de entrada
+      var structureName = "Default Name";
+      var $nameInput = $overlay.find('[data-message-structure-name]');
+      if ($nameInput.length > 0) {
+        structureName = $nameInput.val() || "Default Name";
+      }
+      
       // Generar la nueva estructura del JSON
       var jsonStructure = {
         unique: "10",
@@ -682,7 +713,7 @@ function Comments(eventBus, overlays, bpmnjs) {
         name: "New CI",
         type: "Communicative Interaction",
         messageStructure: {
-          name: "Default Name",
+          messageName: structureName,
           type: "Structure",
           children: children
         }
@@ -912,13 +943,8 @@ function Comments(eventBus, overlays, bpmnjs) {
                       
                       var $newRow = addFieldRow(item, fieldType, container, level);
                       
-                      // Si tiene hijos, cargarlos recursivamente
-                      if (item.children && Array.isArray(item.children) && item.children.length > 0) {
-                        var $childrenContainer = $newRow.find('[data-children]').first();
-                        if ($childrenContainer.length > 0) {
-                          loadFieldsRecursively(item.children, $childrenContainer, level + 1);
-                        }
-                      }
+                      // Hijo ya gestionado en addFieldRow para Aggregation/Iteration.
+                      // Evitamos recursión aquí para no duplicar nodos al recargar.
                     }
                   });
                 }
@@ -927,6 +953,14 @@ function Comments(eventBus, overlays, bpmnjs) {
                 if (parsedData.messageStructure && parsedData.messageStructure.children && Array.isArray(parsedData.messageStructure.children)) {
                   loadFieldsRecursively(parsedData.messageStructure.children, $fields, 0);
                 }
+              
+              // Cargar el nombre de la estructura de mensaje
+              if (parsedData.messageStructure && parsedData.messageStructure.messageName) {
+                var $nameInput = $overlay.find('[data-message-structure-name]');
+                if ($nameInput.length > 0) {
+                  $nameInput.val(parsedData.messageStructure.messageName);
+                }
+              }
               
               // Actualizar el editor JSON
               $editor.text(stringifyPretty(parsedData));
@@ -1336,6 +1370,12 @@ function Comments(eventBus, overlays, bpmnjs) {
           
           if ($fields.find('[data-row]').length > 0) {
             // Serializar campos para este elemento
+            var structureName = "Default Name";
+            var $nameInput = $overlay.find('[data-message-structure-name]');
+            if ($nameInput.length > 0) {
+              structureName = $nameInput.val() || "Default Name";
+            }
+            
             var json = {
               unique: "10",
               identifier: element.businessObject.name || element.businessObject.id || 'Unknown Element',
@@ -1343,7 +1383,7 @@ function Comments(eventBus, overlays, bpmnjs) {
               name: "New CI",
               type: "Communicative Interaction",
               messageStructure: {
-                name: "Default Name",
+                name: structureName,
                 type: "Structure",
                 children: []
               }
@@ -1435,12 +1475,16 @@ Comments.OVERLAY_HTML =
           '<button type="button" class="btn-save" data-save title="Sync to JSON">Save</button>' +
           '<button type="button" class="btn-clear" data-clear title="Clear fields">Clear</button>' +
         '</div>' +
+        '<div class="message-structure-name" style="margin: 10px 0; padding: 8px; border-radius: 4px;">' +
+          '<label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Message Structure Name:</label>' +
+          '<input data-message-structure-name type="text" class="fld" placeholder="Name"  style="display"/>' +
+        '</div>' +
       '<div class="comments"></div>' +
       '<div class="field-titles" data-field-titles></div>' +
       '<div class="fields" data-fields></div>' +
-      '<div class="edit">' +
-        '<div class="json-editor" data-json-editor tabindex="1" placeholder="{ }"></div>' +
-      '</div>' +
+    //   '<div class="edit">' +
+    //     '<div class="json-editor" data-json-editor tabindex="1" placeholder="{ }"></div>' +
+    //   '</div>' +
     '</div>' +
   '</div>';
 

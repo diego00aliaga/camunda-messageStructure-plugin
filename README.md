@@ -27,14 +27,11 @@
 
 ### Configuration
 
-#### Configurar API Key de Gemini
+#### Set up your GEMINI API Key 
 
-Este plugin utiliza Google Gemini AI para generar diagramas UML. Para usarlo, necesitas configurar tu API key de forma segura:
-
-**Opción 1: Archivo `config.json` (Recomendado)**
-
-1.  **Crea un archivo llamado `config.json`** en la raíz de la carpeta del plugin (al mismo nivel que `package.json`).
-2.  Añade el siguiente contenido al archivo:
+This plugin uses Google Gemini AI to generate UML diagrams. To use it, you need to configure your API key securely:
+1.  Edit the file named config.json in the plugin's root folder (at the same level as package.json).
+2.  Add the following content to the file:
 
     ```json
     {
@@ -42,36 +39,12 @@ Este plugin utiliza Google Gemini AI para generar diagramas UML. Para usarlo, ne
     }
     ```
 
-3.  **Reemplaza `"tu-api-key-aqui"`** con tu API key real de Google AI Studio.
-
-    **⚠️ Importante:** Asegúrate de que el archivo `config.json` esté en tu `.gitignore` (ya debería estarlo para evitar subirlo accidentalmente). Este método es el más confiable para Camunda Modeler.
-
-**Opción 2: Variable de entorno (Alternativa - puede tener problemas en Electron)**
-
-Configura la variable de entorno `GEMINI_API_KEY` antes de ejecutar Camunda Modeler (este método puede ser menos fiable en Electron):
-
-**En macOS/Linux:**
-```bash
-export GEMINI_API_KEY="tu-api-key-aqui"
-# Luego ejecuta Camunda Modeler desde la misma terminal
 ```
 
-**En Windows (PowerShell):**
-```powershell
-$env:GEMINI_API_KEY="tu-api-key-aqui"
-# Luego ejecuta Camunda Modeler desde la misma sesión
-```
-
-**En Windows (CMD):**
-```cmd
-set GEMINI_API_KEY=tu-api-key-aqui
-# Luego ejecuta Camunda Modeler desde la misma sesión
-```
-
-**Para obtener una API key:**
-1.  Visita [Google AI Studio](https://aistudio.google.com/app/apikey)
-2.  Crea una nueva API key
-3.  Cópiala y configúrala usando una de las opciones anteriores.
+**How to obtain an API KEY:**
+1.  Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+2.  Create your own API KEY
+3.  Copy and configure it using the method described above.
 
 ### Usage
 
@@ -102,3 +75,4 @@ npm run bundle
 MIT © Diego Aliaga
 
 # camunda-messageStructure-plugin
+

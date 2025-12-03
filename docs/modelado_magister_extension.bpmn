@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:example="http://example.com/schema/example/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1aalx5c" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:collaboration id="Collaboration_15wbds3">
+    <bpmn:extensionElements />
+    <bpmn:participant id="Participant_1mrmntj" name="Escuela Informática" processRef="Process_0o69904" />
+    <bpmn:participant id="Participant_10f8qpp" name="Estudiantes" />
+    <bpmn:participant id="Participant_0rk2zar" name="Unidad de Posgrado" />
+    <bpmn:messageFlow id="Flow_0un9090" sourceRef="Event_1tsimyg" targetRef="Participant_0rk2zar" />
+    <bpmn:messageFlow id="Flow_0d0lt7p" sourceRef="Participant_0rk2zar" targetRef="Event_00tjr3q" />
+    <bpmn:messageFlow id="Flow_1w8abr2" sourceRef="Event_1n7o7sf" targetRef="Participant_10f8qpp" />
+    <bpmn:messageFlow id="Flow_0uis26w" sourceRef="Participant_10f8qpp" targetRef="Event_16nczpj" />
+    <bpmn:messageFlow id="Flow_154y14a" sourceRef="Event_1sru2o3" targetRef="Participant_0rk2zar" />
+    <bpmn:messageFlow id="Flow_0z089jb" sourceRef="Participant_0rk2zar" targetRef="Event_11fbmmj" />
+    <bpmn:messageFlow id="Flow_1fjg9gf" sourceRef="Event_1r3zokh" targetRef="Participant_0rk2zar" />
+    <bpmn:messageFlow id="Flow_0t0mv7e" sourceRef="Participant_0rk2zar" targetRef="Event_0w03ury" />
+    <bpmn:messageFlow id="Flow_1pkfudy" sourceRef="Event_0n3nsqv" targetRef="Participant_0rk2zar" />
+    <bpmn:messageFlow id="Flow_153bki1" sourceRef="Participant_0rk2zar" targetRef="Event_1d7xz9c" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_0o69904" name="" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:versionTag value="" />
+    </bpmn:extensionElements>
+    <bpmn:laneSet id="LaneSet_0q7lyic">
+      <bpmn:lane id="Lane_0j2pjcg" name="Secretaria">
+        <bpmn:flowNodeRef>Event_0d1xzle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0i172wv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_00tjr3q</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1tsimyg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0mp4o0l</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1d7xz9c</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0w03ury</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_11fbmmj</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1sru2o3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_175c7mr</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0edb5uy</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1r3zokh</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1nxmum0</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0uz85l8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0n3nsqv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1h5jf38</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_0l53w0y</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1n7o7sf</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_16nczpj</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1um3sus</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_068cfvs">
+          <bpmn:lane id="Lane_0ucajhb">
+            <bpmn:flowNodeRef>Event_0d1xzle</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_0i172wv</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_00tjr3q</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_1tsimyg</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_0mp4o0l</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_1d7xz9c</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_0w03ury</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_11fbmmj</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_1sru2o3</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_175c7mr</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_0edb5uy</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_1r3zokh</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1nxmum0</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_0uz85l8</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_0n3nsqv</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1h5jf38</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_0l53w0y</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_1n7o7sf</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_16nczpj</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1um3sus</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_0rpkgb2" name="Director de magister">
+        <bpmn:flowNodeRef>Activity_09yx2b9</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_1x8zxmv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1glsmx8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_0b59st0</bpmn:flowNodeRef>
+        <bpmn:childLaneSet id="LaneSet_18az2ew">
+          <bpmn:lane id="Lane_1bs0zhn">
+            <bpmn:flowNodeRef>Activity_09yx2b9</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Activity_1x8zxmv</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Event_1glsmx8</bpmn:flowNodeRef>
+            <bpmn:flowNodeRef>Gateway_0b59st0</bpmn:flowNodeRef>
+          </bpmn:lane>
+        </bpmn:childLaneSet>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_03z9j6u" sourceRef="Activity_09yx2b9" targetRef="Gateway_0b59st0" />
+    <bpmn:sequenceFlow id="Flow_04qr741" sourceRef="Activity_1um3sus" targetRef="Activity_1x8zxmv" />
+    <bpmn:sequenceFlow id="Flow_094dcl1" sourceRef="Event_11fbmmj" targetRef="Gateway_0edb5uy" />
+    <bpmn:sequenceFlow id="Flow_0ahg3j3" sourceRef="Activity_1x8zxmv" targetRef="Event_1glsmx8" />
+    <bpmn:sequenceFlow id="Flow_0oj1gfx" sourceRef="Activity_1nxmum0" targetRef="Event_1r3zokh" />
+    <bpmn:sequenceFlow id="Flow_0ppjt63" sourceRef="Activity_0mp4o0l" targetRef="Event_1tsimyg" />
+    <bpmn:sequenceFlow id="Flow_0sa8siv" sourceRef="Activity_1h5jf38" targetRef="Event_0n3nsqv" />
+    <bpmn:sequenceFlow id="Flow_0tvcavj" sourceRef="Gateway_0uz85l8" targetRef="Activity_1h5jf38" />
+    <bpmn:sequenceFlow id="Flow_11uywzr" sourceRef="Event_0d1xzle" targetRef="Activity_0mp4o0l" />
+    <bpmn:sequenceFlow id="Flow_128s1ei" sourceRef="Event_00tjr3q" targetRef="Activity_0i172wv" />
+    <bpmn:sequenceFlow id="Flow_180y99y" sourceRef="Event_0w03ury" targetRef="Gateway_0uz85l8" />
+    <bpmn:sequenceFlow id="Flow_181jphk" sourceRef="Gateway_0edb5uy" targetRef="Activity_1nxmum0" />
+    <bpmn:sequenceFlow id="Flow_197mjza" sourceRef="Activity_0l53w0y" targetRef="Event_1n7o7sf" />
+    <bpmn:sequenceFlow id="Flow_1l0b6wm" sourceRef="Event_16nczpj" targetRef="Activity_1um3sus" />
+    <bpmn:sequenceFlow id="Flow_1w0xok1" sourceRef="Activity_0i172wv" targetRef="Activity_09yx2b9" />
+    <bpmn:startEvent id="Event_0d1xzle" name="Inicio Nuevo Semestre">
+      <bpmn:outgoing>Flow_11uywzr</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0zzlj5d" name="No" sourceRef="Gateway_175c7mr" targetRef="Gateway_0edb5uy" />
+    <bpmn:sequenceFlow id="Flow_0oluous" name="Si" sourceRef="Gateway_175c7mr" targetRef="Event_1sru2o3" />
+    <bpmn:userTask id="Activity_09yx2b9" name="Determinar asignaturas y temas del periodo académico">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1w0xok1</bpmn:incoming>
+      <bpmn:outgoing>Flow_03z9j6u</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:task id="Activity_0i172wv" name="Notificar inicio nuevo periodo al director">
+      <bpmn:incoming>Flow_128s1ei</bpmn:incoming>
+      <bpmn:outgoing>Flow_1w0xok1</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="Event_00tjr3q" name="Creación de nuevo periodo">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Creación de nuevo periodo","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"PERIODO ACADEMICO","type":"Structure","children":[{"name":"Programa","type":"Reference Field","operation":"input","domain":"Programa","identifier":"Identifier","children":[],"extended":true},{"name":"Año","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]},{"name":"Semestre","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha inicio nuevo periodo","type":"Data Field","operation":"input","domain":"date","identifier":"Identifier","children":[]},{"name":"Fecha fin nuevo periodo","type":"Data Field","operation":"input","domain":"date","identifier":"Identifier","children":[]},{"name":"Estado","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]},{"name":"Fecha de modificacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]}]}}</bpmn:documentation>
+      <bpmn:outgoing>Flow_128s1ei</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0yz2vwm" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateThrowEvent id="Event_1tsimyg" name="Cierre de periodo actual" example:ejemploField="">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Cierre de periodo actual","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"PERIODO ACADEMICO","type":"Structure","children":[{"name":"Programa","type":"Reference Field","operation":"input","domain":"Programa","identifier":"false","children":[],"extended":false},{"name":"Año","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]},{"name":"Semestre","type":"Data Field","operation":"Operation","domain":"text","identifier":"Identifier","children":[]},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha de modificacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]}]}}</bpmn:documentation>
+      <bpmn:incoming>Flow_0ppjt63</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1h15ol6" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:task id="Activity_0mp4o0l" name="Solicitar cierre de periodo anterior">
+      <bpmn:incoming>Flow_11uywzr</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ppjt63</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="Event_1d7xz9c" name="Horario asignado en la asignatura">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Horario asignado en la asignatura","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"ASIGNATURA OFRECIDA","type":"Structure","children":[{"name":"Asignatura Ofrecida","type":"Reference Field","operation":"input","domain":"Asignatura Ofrecida","identifier":"Identifier","children":[],"extended":true},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha de modificacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]}]}}</bpmn:documentation>
+      <bpmn:outgoing>Flow_0xo7esj</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0hjbfld" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_0w03ury" name="Profesor inscrito en al asignatura">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Profesor inscrito en al asignatura","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"ASIGNATURA OFRECIDA","type":"Structure","children":[{"name":"Asignatura Ofrecida","type":"Reference Field","operation":"input","domain":"Asignatura Ofrecida","identifier":"Identifier","children":[],"extended":true},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha de modificacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]}]}}</bpmn:documentation>
+      <bpmn:outgoing>Flow_180y99y</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1qie0co" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Event_11fbmmj" name="Tema creado">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Tema creado","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"TEMA","type":"Structure","children":[{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha de modifiacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]}]}}</bpmn:documentation>
+      <bpmn:outgoing>Flow_094dcl1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_09vraoa" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateThrowEvent id="Event_1sru2o3" name="Creación de tema de asignatura" example:ejemploField="">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Creación de tema de asignatura","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"ASIGNATURA OFRECIDA","type":"Structure","children":[{"name":"Asignatura","type":"Reference Field","operation":"input","domain":"Asignatura","identifier":"Identifier","children":[],"extended":true},{"name":"TEMAS","type":"Aggregation","children":[{"name":"TEMA","type":"Iteration","children":[{"name":"Nombre Tema","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha modificacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]}]}]}]}}</bpmn:documentation>
+      <bpmn:incoming>Flow_0oluous</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_08z6pdy" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:exclusiveGateway id="Gateway_175c7mr" name="¿El tema se dicta por primera vez?">
+      <bpmn:incoming>Flow_0ic7sbd</bpmn:incoming>
+      <bpmn:outgoing>Flow_0oluous</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0zzlj5d</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:exclusiveGateway id="Gateway_0edb5uy">
+      <bpmn:incoming>Flow_094dcl1</bpmn:incoming>
+      <bpmn:incoming>Flow_0zzlj5d</bpmn:incoming>
+      <bpmn:outgoing>Flow_181jphk</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateThrowEvent id="Event_1r3zokh" name="Inscripción profesor en la asignatura" example:ejemploField="">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Inscripción profesor en la asignatura","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"ASIGNATURA OFRECIDA","type":"Structure","children":[{"name":"Asignatura Ofrecida","type":"Reference Field","operation":"input","domain":"Asignatura Ofrecida","identifier":"Identifier","children":[],"extended":true},{"name":"Profesor","type":"Reference Field","operation":"input","domain":"Profesor","identifier":"Identifier","children":[],"extended":false},{"name":"Fecha de modificacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]}]}}</bpmn:documentation>
+      <bpmn:incoming>Flow_0oj1gfx</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_07wkao5" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:task id="Activity_1nxmum0" name="Asignar profesores en asignaturas del periodo academ.">
+      <bpmn:incoming>Flow_181jphk</bpmn:incoming>
+      <bpmn:incoming>Flow_1pzi5ig</bpmn:incoming>
+      <bpmn:outgoing>Flow_0oj1gfx</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gateway_0uz85l8">
+      <bpmn:incoming>Flow_180y99y</bpmn:incoming>
+      <bpmn:outgoing>Flow_0tvcavj</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0xo7esj" sourceRef="Event_1d7xz9c" targetRef="Activity_0l53w0y" />
+    <bpmn:intermediateThrowEvent id="Event_0n3nsqv" name="Asignación horario a la asignatura" example:ejemploField="">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Asignación horario a la asignatura","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"ASIGNATURA OFRECIDA","type":"Structure","children":[{"name":"Asignatura Ofrecida","type":"Reference Field","operation":"input","domain":"Asignatura Ofrecida","identifier":"Identifier","children":[],"extended":true},{"name":"HORARIOS","type":"Aggregation","children":[{"name":"HORARIO","type":"Iteration","children":[{"name":"Dia","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]},{"name":"Hora inicio","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]},{"name":"Hora fin","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]}]},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha de modificacion","type":"Data Field","operation":"generation","domain":"date","identifier":"Identifier","children":[]}]}]}}</bpmn:documentation>
+      <bpmn:incoming>Flow_0sa8siv</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0adpeaw" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:task id="Activity_1h5jf38" name="Determinar horarios asignatura">
+      <bpmn:incoming>Flow_0tvcavj</bpmn:incoming>
+      <bpmn:outgoing>Flow_0sa8siv</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_0l53w0y" name="Notificar oferta académica">
+      <bpmn:incoming>Flow_0xo7esj</bpmn:incoming>
+      <bpmn:outgoing>Flow_197mjza</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateThrowEvent id="Event_1n7o7sf" name="Oferta académica del periodo" example:ejemploField="">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Oferta académica del periodo","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"OFERTA ACADEMICA","type":"Structure","children":[{"name":"Periodo academico","type":"Reference Field","operation":"input","domain":"Periodo academico","identifier":"Identifier","children":[]},{"name":"ASIGNATURA OFRECIDAS","type":"Aggregation","children":[{"name":"ASIGNATURA OFRECIDA","type":"Iteration","children":[{"name":"Tipo","type":"Data Field","operation":"Operation","domain":"Tipo","identifier":"Identifier","children":[]},{"name":"Asignatura Ofrecida","type":"Reference Field","operation":"input","domain":"Asignatura Ofrecida","identifier":"Identifier","children":[],"extended":true},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha modificacion","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]}]}]}]}}</bpmn:documentation>
+      <bpmn:incoming>Flow_197mjza</bpmn:incoming>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_07y3uhe" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:intermediateCatchEvent id="Event_16nczpj" name="Asignaturas inscritas">
+      <bpmn:documentation>dataFields:{"unique":"10","identifier":"Asignaturas inscritas","pool":"Process_0o69904","name":"New CI","type":"Communicative Interaction","messageStructure":{"messageName":"INSCRIPCION","type":"Structure","children":[{"name":"Oferta academica","type":"Reference Field","operation":"input","domain":"Oferta academica","identifier":"false","children":[],"extended":true},{"name":"ASIGNATURA ELEGIDAS","type":"Aggregation","children":[{"name":"ASIGNATURA ELEGIDA","type":"Iteration","children":[{"name":"Asignatura Ofrecida","type":"Reference Field","operation":"input","domain":"Asignatura Ofrecida","identifier":"Identifier","children":[],"extended":true},{"name":"Tipo","type":"Data Field","operation":"input","domain":"text","identifier":"Identifier","children":[]},{"name":"Estado","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]},{"name":"Fecha modificacion","type":"Data Field","operation":"generation","domain":"text","identifier":"Identifier","children":[]}]}]},{"name":"Estudiante","type":"Reference Field","operation":"input","domain":"Estudiante","identifier":"Identifier","children":[],"extended":false}]}}</bpmn:documentation>
+      <bpmn:outgoing>Flow_1l0b6wm</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0jdlyy9" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Activity_1um3sus" name="Inscribir y notificar asignaturas en el sistema">
+      <bpmn:incoming>Flow_1l0b6wm</bpmn:incoming>
+      <bpmn:outgoing>Flow_04qr741</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_1x8zxmv" name="Asignar calendarización y disponibilidad académicos">
+      <bpmn:incoming>Flow_04qr741</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ahg3j3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="Event_1glsmx8">
+      <bpmn:incoming>Flow_0ahg3j3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0ic7sbd" name="No" sourceRef="Gateway_0b59st0" targetRef="Gateway_175c7mr" />
+    <bpmn:exclusiveGateway id="Gateway_0b59st0" name="¿ La asignatura es obligatoria?">
+      <bpmn:incoming>Flow_03z9j6u</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ic7sbd</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1pzi5ig</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1pzi5ig" name="Si" sourceRef="Gateway_0b59st0" targetRef="Activity_1nxmum0" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_15wbds3">
+      <bpmndi:BPMNShape id="Participant_1mrmntj_di" bpmnElement="Participant_1mrmntj" isHorizontal="true">
+        <dc:Bounds x="160" y="280" width="2140" height="680" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0rpkgb2_di" bpmnElement="Lane_0rpkgb2" isHorizontal="true">
+        <dc:Bounds x="190" y="640" width="2110" height="320" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1bs0zhn_di" bpmnElement="Lane_1bs0zhn" isHorizontal="true">
+        <dc:Bounds x="220" y="640" width="2080" height="320" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0j2pjcg_di" bpmnElement="Lane_0j2pjcg" isHorizontal="true">
+        <dc:Bounds x="190" y="280" width="2110" height="360" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0ucajhb_di" bpmnElement="Lane_0ucajhb" isHorizontal="true">
+        <dc:Bounds x="220" y="280" width="2080" height="360" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0d1xzle_di" bpmnElement="Event_0d1xzle">
+        <dc:Bounds x="242" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="230" y="495" width="61" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_07r8sg4_di" bpmnElement="Activity_09yx2b9">
+        <dc:Bounds x="680" y="760" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0i172wv_di" bpmnElement="Activity_0i172wv">
+        <dc:Bounds x="680" y="430" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_00tjr3q_di" bpmnElement="Event_00tjr3q">
+        <dc:Bounds x="582" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="565" y="498" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1tsimyg_di" bpmnElement="Event_1tsimyg">
+        <dc:Bounds x="472" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="448" y="488" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0mp4o0l_di" bpmnElement="Activity_0mp4o0l">
+        <dc:Bounds x="320" y="430" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1d7xz9c_di" bpmnElement="Event_1d7xz9c">
+        <dc:Bounds x="1622" y="332" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1528" y="336" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0w03ury_di" bpmnElement="Event_0w03ury">
+        <dc:Bounds x="1342" y="332" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1252" y="337" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_11fbmmj_di" bpmnElement="Event_11fbmmj">
+        <dc:Bounds x="1072" y="332" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="988" y="343" width="64" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1sru2o3_di" bpmnElement="Event_1sru2o3">
+        <dc:Bounds x="922" y="332" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="826" y="336" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_175c7mr_di" bpmnElement="Gateway_175c7mr" isMarkerVisible="true">
+        <dc:Bounds x="915" y="515" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="818" y="520" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_08i7koc_di" bpmnElement="Gateway_0edb5uy" isMarkerVisible="true">
+        <dc:Bounds x="1065" y="515" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1r3zokh_di" bpmnElement="Event_1r3zokh">
+        <dc:Bounds x="1202" y="412" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1116" y="410" width="68" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1nxmum0_di" bpmnElement="Activity_1nxmum0">
+        <dc:Bounds x="1170" y="500" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0uz85l8_di" bpmnElement="Gateway_0uz85l8" isMarkerVisible="true">
+        <dc:Bounds x="1335" y="515" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0n3nsqv_di" bpmnElement="Event_0n3nsqv">
+        <dc:Bounds x="1472" y="412" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1406" y="410" width="56" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1h5jf38_di" bpmnElement="Activity_1h5jf38">
+        <dc:Bounds x="1440" y="500" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0l53w0y_di" bpmnElement="Activity_0l53w0y">
+        <dc:Bounds x="1810" y="510" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1n7o7sf_di" bpmnElement="Event_1n7o7sf">
+        <dc:Bounds x="1842" y="412" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1745" y="417" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_16nczpj_di" bpmnElement="Event_16nczpj">
+        <dc:Bounds x="2072" y="332" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2118" y="336" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1um3sus_di" bpmnElement="Activity_1um3sus">
+        <dc:Bounds x="2040" y="510" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_082tljo_di" bpmnElement="Activity_1x8zxmv">
+        <dc:Bounds x="2040" y="760" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1glsmx8_di" bpmnElement="Event_1glsmx8">
+        <dc:Bounds x="2232" y="782" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0b59st0_di" bpmnElement="Gateway_0b59st0" isMarkerVisible="true">
+        <dc:Bounds x="915" y="775" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="901" y="836" width="77" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_03z9j6u_di" bpmnElement="Flow_03z9j6u">
+        <di:waypoint x="780" y="800" />
+        <di:waypoint x="915" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04qr741_di" bpmnElement="Flow_04qr741">
+        <di:waypoint x="2090" y="590" />
+        <di:waypoint x="2090" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_094dcl1_di" bpmnElement="Flow_094dcl1">
+        <di:waypoint x="1090" y="368" />
+        <di:waypoint x="1090" y="515" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ahg3j3_di" bpmnElement="Flow_0ahg3j3">
+        <di:waypoint x="2140" y="800" />
+        <di:waypoint x="2232" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0oj1gfx_di" bpmnElement="Flow_0oj1gfx">
+        <di:waypoint x="1220" y="500" />
+        <di:waypoint x="1220" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ppjt63_di" bpmnElement="Flow_0ppjt63">
+        <di:waypoint x="420" y="470" />
+        <di:waypoint x="472" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0sa8siv_di" bpmnElement="Flow_0sa8siv">
+        <di:waypoint x="1490" y="500" />
+        <di:waypoint x="1490" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0tvcavj_di" bpmnElement="Flow_0tvcavj">
+        <di:waypoint x="1385" y="540" />
+        <di:waypoint x="1440" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11uywzr_di" bpmnElement="Flow_11uywzr">
+        <di:waypoint x="278" y="470" />
+        <di:waypoint x="320" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_128s1ei_di" bpmnElement="Flow_128s1ei">
+        <di:waypoint x="618" y="470" />
+        <di:waypoint x="680" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_180y99y_di" bpmnElement="Flow_180y99y">
+        <di:waypoint x="1360" y="368" />
+        <di:waypoint x="1360" y="515" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_181jphk_di" bpmnElement="Flow_181jphk">
+        <di:waypoint x="1115" y="540" />
+        <di:waypoint x="1170" y="540" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_197mjza_di" bpmnElement="Flow_197mjza">
+        <di:waypoint x="1860" y="510" />
+        <di:waypoint x="1860" y="448" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1l0b6wm_di" bpmnElement="Flow_1l0b6wm">
+        <di:waypoint x="2090" y="368" />
+        <di:waypoint x="2090" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1w0xok1_di" bpmnElement="Flow_1w0xok1">
+        <di:waypoint x="730" y="510" />
+        <di:waypoint x="730" y="760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0zzlj5d_di" bpmnElement="Flow_0zzlj5d">
+        <di:waypoint x="965" y="540" />
+        <di:waypoint x="1065" y="540" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1002" y="528" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0oluous_di" bpmnElement="Flow_0oluous">
+        <di:waypoint x="940" y="515" />
+        <di:waypoint x="940" y="368" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="951" y="444" width="10" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xo7esj_di" bpmnElement="Flow_0xo7esj">
+        <di:waypoint x="1640" y="368" />
+        <di:waypoint x="1640" y="550" />
+        <di:waypoint x="1810" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ic7sbd_di" bpmnElement="Flow_0ic7sbd">
+        <di:waypoint x="940" y="775" />
+        <di:waypoint x="940" y="565" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="948" y="667" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pzi5ig_di" bpmnElement="Flow_1pzi5ig">
+        <di:waypoint x="965" y="800" />
+        <di:waypoint x="1220" y="800" />
+        <di:waypoint x="1220" y="580" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1088" y="782" width="10" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_1mhgduk_di" bpmnElement="Participant_10f8qpp" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2140" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_1u56db2_di" bpmnElement="Participant_0rk2zar" isHorizontal="true">
+        <dc:Bounds x="160" y="170" width="2140" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0un9090_di" bpmnElement="Flow_0un9090">
+        <di:waypoint x="490" y="452" />
+        <di:waypoint x="490" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0d0lt7p_di" bpmnElement="Flow_0d0lt7p">
+        <di:waypoint x="600" y="230" />
+        <di:waypoint x="600" y="452" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1w8abr2_di" bpmnElement="Flow_1w8abr2">
+        <di:waypoint x="1860" y="412" />
+        <di:waypoint x="1860" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0uis26w_di" bpmnElement="Flow_0uis26w">
+        <di:waypoint x="2090" y="140" />
+        <di:waypoint x="2090" y="332" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_154y14a_di" bpmnElement="Flow_154y14a">
+        <di:waypoint x="940" y="332" />
+        <di:waypoint x="940" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0z089jb_di" bpmnElement="Flow_0z089jb">
+        <di:waypoint x="1090" y="230" />
+        <di:waypoint x="1090" y="332" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fjg9gf_di" bpmnElement="Flow_1fjg9gf">
+        <di:waypoint x="1220" y="412" />
+        <di:waypoint x="1220" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0t0mv7e_di" bpmnElement="Flow_0t0mv7e">
+        <di:waypoint x="1360" y="230" />
+        <di:waypoint x="1360" y="332" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1pkfudy_di" bpmnElement="Flow_1pkfudy">
+        <di:waypoint x="1490" y="412" />
+        <di:waypoint x="1490" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_153bki1_di" bpmnElement="Flow_153bki1">
+        <di:waypoint x="1640" y="230" />
+        <di:waypoint x="1640" y="332" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
